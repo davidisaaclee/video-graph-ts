@@ -5,6 +5,11 @@
     "module": "ES2015",
     "declaration": true,
     "outDir": "lib",
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+		"strict": true,
+		"noFallthroughCasesInSwitch": true,
+		"noImplicitReturns": true,
+		"noUnusedParameters": true,
+		"noUnusedLocals": true
   }
 }

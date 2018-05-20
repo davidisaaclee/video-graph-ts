@@ -3,9 +3,9 @@ import fragmentShaderSource from 'shaders/fragment';
 
 console.log(vertexShaderSource, fragmentShaderSource);
 
-/*
 export function render(gl: WebGLRenderingContext) {
 	resize(gl.canvas);
+	/*
 	gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
 	const vertexShader =
@@ -22,8 +22,10 @@ export function render(gl: WebGLRenderingContext) {
 
 	const program =
 		createProgram(gl, [vertexShader, fragmentShader]);
+		*/
 }
 
+/*
 function createProgram(gl, shaders) {
 	const program = gl.createProgram();
 	shaders.forEach(shader => gl.attachShader(program, shader));
@@ -48,17 +50,18 @@ function createShader(gl, type, source) {
 		return null;
 	}
 }
+*/
 
 // https://webglfundamentals.org/webgl/lessons/webgl-resizing-the-canvas.html
-function resize(canvas) {
+function resize(canvas: HTMLCanvasElement) {
 	var realToCSSPixels = window.devicePixelRatio;
 
 	// Lookup the size the browser is displaying the canvas in CSS pixels
 	// and compute a size needed to make our drawingbuffer match it in
 	// device pixels.
-	var displayWidth =
+	const displayWidth =
 		Math.floor(canvas.clientWidth * realToCSSPixels);
-	var displayHeight =
+	const displayHeight =
 		Math.floor(canvas.clientHeight * realToCSSPixels);
 
 	// Check if the canvas is not the same size.
@@ -70,7 +73,4 @@ function resize(canvas) {
 		canvas.height = displayHeight;
 	}
 }
-*/
 
-export function render(gl: WebGLRenderingContext) {
-}

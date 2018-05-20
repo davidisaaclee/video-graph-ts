@@ -1,4 +1,4 @@
-export function glsl(literals, ...placeholders) {
+export function glsl(literals: TemplateStringsArray) {
 	return literals.join('');
 }
 
