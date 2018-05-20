@@ -16,12 +16,12 @@
 		<script id="fragment-shader" type="glsl">
 			precision mediump float;
 
-			uniform sampler2D u_image;
-
 			varying vec2 v_texCoord;
 
 			void main() {
-				gl_FragColor = texture2D(u_image, v_texCoord);
+				gl_FragColor = vec4(
+					vec3(gl_FragCoord.x / 800.),
+					1);
 			}
 		</script>
 		<script id="vertex-shader" type="glsl">
@@ -75,6 +75,7 @@
 						identifier: 'position',
 						type: 'vec2',
 						buffer: createBuffer(
+							gl,
 							new Float32Array([
 								-1, -1,
 								1, -1,
@@ -89,6 +90,7 @@
 						identifier: 'a_texCoord',
 						type: 'vec2',
 						buffer: createBuffer(
+							gl,
 							new Float32Array([
 								0, 0,
 								1, 0,
@@ -109,42 +111,85 @@
 					}))
 					.reduce((acc, elm) => Object.assign(acc, elm), {});
 
-				function createBuffer(data, hint) {
-					const buffer = gl.createBuffer();
-					gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-					gl.bufferData(gl.ARRAY_BUFFER, data, hint);
-					return buffer;
-				}
-
 				gl.useProgram(program);
 
 				Object.keys(attributes)
 					.forEach(iden => gl.enableVertexAttribArray(attributes[iden].location));
 
-				function bindVertexAttribute({ buffer, location, type }, normalize) {
-					if (type !== 'vec2') {
-						throw new Error("Unsupported attribute type");
-					}
+				bindVertexAttribute(gl, attributes['position'], false);
+				bindVertexAttribute(gl, attributes['a_texCoord'], false);
 
-					gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-					gl.vertexAttribPointer(location, 2, gl.FLOAT, normalize, 0, 0);
-				}
-
-				bindVertexAttribute(attributes['position'], false);
-				bindVertexAttribute(attributes['a_texCoord'], false);
-
-
-				const texture =
+				/*
+				const imageTexture =
 					createAndSetupTexture(gl);
 
 				gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-
+				*/
 
 				const primitiveType = gl.TRIANGLES;
 				const drawOffset = 0;
 				const drawCount = 6;
 				gl.drawArrays(primitiveType, drawOffset, drawCount);
 
+
+				/*
+				// TODO: here
+				const textures = [];
+				const framebuffers = [];
+				const framebufferCount = 2;
+				for (let i = 0; i < framebufferCount; i++) {
+					const texture = createTexture(gl);
+					textures.push(texture);
+					gl.texImage2D(
+						gl.TEXTURE_2D, 0, gl.RGBA, image.width, image.height, 0,
+						g.RGBA, gl.UNSIGNED_BYTE, null);
+
+					const framebuffer = gl.createFramebuffer();
+					framebuffers.push(framebuffer);
+					gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+					gl.framebufferTexture2D(
+						gl.FRAMEBUFFER,
+						gl.COLOR_ATTACHMENT0,
+						gl.TEXTURE_2D,
+						texture,
+						0);
+				}
+
+				// Define several convolution kernels
+				var kernels = {
+					normal: [
+						0, 0, 0,
+						0, 1, 0,
+						0, 0, 0
+					],
+					gaussianBlur: [
+						0.045, 0.122, 0.045,
+						0.122, 0.332, 0.122,
+						0.045, 0.122, 0.045
+					],
+					unsharpen: [
+						-1, -1, -1,
+						-1,  9, -1,
+						-1, -1, -1
+					],
+					emboss: [
+						-2, -1,  0,
+						-1,  1,  1,
+						0,  1,  2
+					]
+				};
+
+				// List of effects to apply.
+				var effectsToApply = [
+					"gaussianBlur",
+					"emboss",
+					"gaussianBlur",
+					"unsharpen"
+				];
+*/
+
+
+				// gl.bindTexture(gl.TEXTURE_2D, imageTexture);
 			}
 
 			function createProgram(gl, shaders) {
@@ -218,6 +263,24 @@
 					gl.NEAREST);
 				return texture;
 			}
+
+			function bindVertexAttribute(gl, { buffer, location, type }, normalize) {
+				if (type !== 'vec2') {
+					throw new Error("Unsupported attribute type");
+				}
+
+				gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+				gl.vertexAttribPointer(location, 2, gl.FLOAT, normalize, 0, 0);
+			}
+
+			function createBuffer(gl, data, hint) {
+				const buffer = gl.createBuffer();
+				gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+				gl.bufferData(gl.ARRAY_BUFFER, data, hint);
+				return buffer;
+			}
+
+
 
 
 		</script>
