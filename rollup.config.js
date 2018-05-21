@@ -8,6 +8,7 @@ export default {
 	output: {
 		file: 'lib/runner.js',
 		format: 'cjs',
+		sourcemap: true,
 	},
   plugins: [
 		typescriptPlugin({

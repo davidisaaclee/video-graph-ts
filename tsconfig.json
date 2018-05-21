@@ -6,6 +6,7 @@
     "declaration": true,
     "outDir": "lib",
     "allowSyntheticDefaultImports": true,
+		"sourceMap": true,
 		"strict": true,
 		"noFallthroughCasesInSwitch": true,
 		"noImplicitReturns": true,
