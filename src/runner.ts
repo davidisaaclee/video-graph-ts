@@ -7,5 +7,11 @@ if (gl == null) {
 	throw new Error("WebGL not supported");
 }
 
-render(gl);
+const start = Date.now();
+function renderLoop() {
+	render(gl as WebGLRenderingContext, (Date.now() - start) / 1000);
+	window.requestAnimationFrame(renderLoop);
+}
+
+renderLoop();
 

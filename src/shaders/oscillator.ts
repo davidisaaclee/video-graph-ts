@@ -3,8 +3,9 @@ import { glsl } from 'utility/glslTemplate';
 export default glsl`
 	precision mediump float;
 
+	uniform float t;
+
 	void main() {
-		float t = 2.;
 		float period = 1.;
 		float pixelIndexScaling = 0.0001;
 		vec2 resolution = vec2(800., 800.);

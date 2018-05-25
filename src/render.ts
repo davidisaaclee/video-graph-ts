@@ -14,6 +14,7 @@ import {
 interface PluginNode {
 	program: WebGLProgram;
 	inletToUniformIdentifiers: { [inletKey: string]: string };
+	timeUniformIdentifier?: string;
 	uniforms?: UniformSpecification[];
 }
 
@@ -27,7 +28,8 @@ const makeGraph: (gl: WebGLRenderingContext) => VideoGraph = (gl) => ({
 	nodes: {
 		'oscillator': {
 			program: createProgramWithFragmentShader(gl, fragmentShaderSource),
-			inletToUniformIdentifiers: {}
+			inletToUniformIdentifiers: {},
+			timeUniformIdentifier: 't',
 		},
 		'constant': {
 			program: createProgramWithFragmentShader(gl, constantFragmentSource),
@@ -42,25 +44,26 @@ const makeGraph: (gl: WebGLRenderingContext) => VideoGraph = (gl) => ({
 		}
 	},
 	edges: {
+		/*
 		'constant <- invert': {
 			src: 'invert',
 			dst: 'constant',
 			metadata: { inlet: 'input' }
 		},
-		/*
+		*/
 		'osc <- invert': {
 			src: 'invert',
 			dst: 'oscillator',
 			metadata: { inlet: 'input' }
 		}
-		*/
 	}
 });
 
 function renderGraph(
 	gl: WebGLRenderingContext,
 	graph: VideoGraph,
-	outputNodeKey: string
+	outputNodeKey: string,
+	time: number,
 ) {
 	resizeCanvas(gl.canvas);
 	gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
@@ -124,7 +127,10 @@ function renderGraph(
 	const steps = resolveDependencies(graph, outputNodeKey);
 
 	for (const step of steps) {
-		const { program, inletToUniformIdentifiers, uniforms: constantUniforms } = graph.nodes[step.nodeKey];
+		const {
+			program, inletToUniformIdentifiers, uniforms: constantUniforms,
+			timeUniformIdentifier
+		} = graph.nodes[step.nodeKey];
 		const attributes =
 			buildAttributesDictionary(
 				gl,
@@ -165,7 +171,16 @@ function renderGraph(
 			gl,
 			program,
 			pixelShaderProgramAttributes,
-			[...(constantUniforms == null ? [] : constantUniforms), ...textureUniforms],
+			[
+				...(timeUniformIdentifier == null 
+					? []
+					: [{
+						identifier: timeUniformIdentifier,
+						value: { type: 'f', data: time } as UniformValue
+					}]),
+				...(constantUniforms == null ? [] : constantUniforms),
+				...textureUniforms
+			],
 			framebuffers[step.nodeKey]
 		);
 	}
@@ -218,8 +233,8 @@ function renderGraph(
 
 }
 
-export function render(gl: WebGLRenderingContext) {
-	renderGraph(gl, makeGraph(gl), "invert");
+export function render(gl: WebGLRenderingContext, time: number) {
+	renderGraph(gl, makeGraph(gl), "invert", time);
 }
 
 
