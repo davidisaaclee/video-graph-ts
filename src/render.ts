@@ -1,14 +1,289 @@
 import vertexShaderSource from 'shaders/vertex';
 import fragmentShaderSource from 'shaders/oscillator';
+import constantFragmentSource from 'shaders/constantColor';
 import invertShaderSource from 'shaders/invertRGB';
 import { AttributeType, BufferData } from 'utility/glTypes';
 import {
 	createProgram, createShader, createBuffer, bindVertexAttribute
 } from 'utility/glHelpers';
 import { resizeCanvas } from 'utility/resizeCanvas';
+import {
+	Graph, resolveDependencies, edgesWithSource
+} from 'utility/Graph';
+
+interface PluginNode {
+	program: WebGLProgram;
+	inletToUniformIdentifiers: { [inletKey: string]: string };
+	uniforms?: UniformSpecification[];
+}
+
+interface PluginConnection {
+	inlet: string;
+}
+
+type VideoGraph = Graph<PluginNode, PluginConnection>;
+
+const makeGraph: (gl: WebGLRenderingContext) => VideoGraph = (gl) => ({
+	nodes: {
+		'oscillator': {
+			program: createProgramWithFragmentShader(gl, fragmentShaderSource),
+			inletToUniformIdentifiers: {}
+		},
+		'constant': {
+			program: createProgramWithFragmentShader(gl, constantFragmentSource),
+			inletToUniformIdentifiers: {},
+			uniforms: [
+				{ identifier: 'value', value: { type: '3f', data: [1, 0, 0] } }
+			]
+		},
+		'invert': {
+			program: createProgramWithFragmentShader(gl, invertShaderSource),
+			inletToUniformIdentifiers: { 'input': 'inputTexture' }
+		}
+	},
+	edges: {
+		'constant <- invert': {
+			src: 'invert',
+			dst: 'constant',
+			metadata: { inlet: 'input' }
+		},
+		/*
+		'osc <- invert': {
+			src: 'invert',
+			dst: 'oscillator',
+			metadata: { inlet: 'input' }
+		}
+		*/
+	}
+});
+
+function renderGraph(
+	gl: WebGLRenderingContext,
+	graph: VideoGraph,
+	outputNodeKey: string
+) {
+	resizeCanvas(gl.canvas);
+	gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+
+	const pixelShaderProgramAttributes = [
+		{
+			identifier: 'position',
+			type: 'vec2',
+			buffer: createBuffer(
+				gl,
+				new Float32Array([
+					-1, -1,
+					1, -1,
+					-1, 1,
+					-1, 1,
+					1, -1,
+					1, 1
+				]),
+				gl.STATIC_DRAW)
+		},
+		{
+			identifier: 'a_texCoord',
+			type: 'vec2',
+			buffer: createBuffer(
+				gl,
+				new Float32Array([
+					0, 0,
+					1, 0,
+					0, 1,
+					0, 1,
+					1, 0,
+					1, 1,
+				]),
+				gl.STATIC_DRAW)
+		},
+	] as AttributeSpecification[];
+
+	const textures = Object.keys(graph.nodes)
+		.map(key => ({ [key]: createAndSetupTexture(gl) }))
+		.reduce((acc, elm) => Object.assign(acc, elm), {});
+
+	const framebuffers = Object.keys(textures)
+		.map(key => {
+			if (key === outputNodeKey) {
+				return { [key]: null };
+			}
+
+			const framebuffer = gl.createFramebuffer();
+			gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+			gl.framebufferTexture2D(
+				gl.FRAMEBUFFER,
+				gl.COLOR_ATTACHMENT0,
+				gl.TEXTURE_2D,
+				textures[key],
+				0);
+
+			return { [key]: framebuffer };
+		})
+		.reduce((acc, elm) => Object.assign(acc, elm), {});
+
+	const steps = resolveDependencies(graph, outputNodeKey);
+
+	for (const step of steps) {
+		const { program, inletToUniformIdentifiers, uniforms: constantUniforms } = graph.nodes[step.nodeKey];
+		const attributes =
+			buildAttributesDictionary(
+				gl,
+				pixelShaderProgramAttributes,
+				program);
+
+		const edges = Array.from(edgesWithSource(step.nodeKey, graph));
+		const textureUniforms =
+			Object.keys(inletToUniformIdentifiers)
+			.map(inletKey => {
+				const matchingEdgeKeys =
+					edges.filter(e => graph.edges[e].metadata.inlet === inletKey);
+				const sourceNodeKey = matchingEdgeKeys.length === 0
+					? null
+					: graph.edges[matchingEdgeKeys[0]].dst;
+
+				return { inletKey, sourceNodeKey };
+			})
+			.map(({ inletKey, sourceNodeKey }) => {
+				if (sourceNodeKey == null) {
+					throw new Error("TODO");
+				}
+
+				return {
+					identifier: inletToUniformIdentifiers[inletKey],
+					value: { type: 'texture', data: textures[sourceNodeKey] } as UniformValue
+				};
+			});
+
+		if (textureUniforms.length > 0) {
+			textureUniforms.push({
+				identifier: 'inputTextureDimensions',
+				value: { type: '2f', data: [gl.canvas.width, gl.canvas.height] }
+			});
+		}
+
+		drawWithSpecs(
+			gl,
+			program,
+			pixelShaderProgramAttributes,
+			[...(constantUniforms == null ? [] : constantUniforms), ...textureUniforms],
+			framebuffers[step.nodeKey]
+		);
 
 
 
+		/*
+		activateProgram(
+			gl,
+			program,
+			attributes,
+			textureUniforms);
+
+		draw(framebuffers[step.nodeKey]);
+		*/
+	}
+
+	
+	/*
+	const startProgram = createProgramWithFragmentShader(gl, fragmentShaderSource);
+	const startProgramAttributes =
+		buildAttributesDictionary(gl, pixelShaderProgramAttributes, startProgram);
+	activateProgram(
+		gl,
+		startProgram,
+		startProgramAttributes,
+		{});
+
+
+	const renderTexture = createAndSetupTexture(gl);
+
+	gl.bindTexture(
+		gl.TEXTURE_2D,
+		renderTexture);
+	gl.texImage2D(
+		gl.TEXTURE_2D, 0, gl.RGBA, gl.canvas.width, gl.canvas.height, 0,
+		gl.RGBA, gl.UNSIGNED_BYTE, null);
+
+	const framebuffer = gl.createFramebuffer();
+	gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+	gl.framebufferTexture2D(
+		gl.FRAMEBUFFER,
+		gl.COLOR_ATTACHMENT0,
+		gl.TEXTURE_2D,
+		renderTexture,
+		0);
+
+	draw(framebuffer);
+
+	drawWithSpecs(
+		gl,
+		createProgramWithFragmentShader(gl, invertShaderSource),
+		pixelShaderProgramAttributes,
+		[
+				{
+					identifier: 'inputTextureDimensions',
+					value: { type: '2f', data: [gl.canvas.width, gl.canvas.height] }
+				},
+				{
+					identifier: 'inputTexture',
+					value: { type: 'texture', data: renderTexture }
+				}
+			],
+		null);
+	*/
+	
+
+	function draw(framebuffer: WebGLFramebuffer | null) {
+		gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+		// gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+
+		const primitiveType = gl.TRIANGLES;
+		const drawOffset = 0;
+		const drawCount = 6;
+		gl.drawArrays(primitiveType, drawOffset, drawCount);
+	}
+
+	function drawWithSpecs(
+		gl: WebGLRenderingContext,
+		program: WebGLProgram,
+		attributes: Array<AttributeSpecification>,
+		uniforms: Array<UniformSpecification>,
+		outputFramebuffer: WebGLFramebuffer | null
+	) {
+		return drawWith(
+			program,
+			buildAttributesDictionary(
+				gl,
+				attributes,
+				program),
+			buildUniformsDictionary(
+				gl,
+				uniforms,
+				program),
+			outputFramebuffer);
+	}
+
+	function drawWith(
+		program: WebGLProgram,
+		attributesDictionary: AttributeDictionary,
+		uniformsDictionary: { [iden: string]: UniformData },
+		outputFramebuffer: WebGLFramebuffer | null
+	) {
+		activateProgram(
+			gl,
+			program,
+			attributesDictionary,
+			uniformsDictionary);
+
+		draw(outputFramebuffer);
+	}
+
+}
+
+export function render(gl: WebGLRenderingContext) {
+	renderGraph(gl, makeGraph(gl), "invert");
+}
+
+/*
 export function render(gl: WebGLRenderingContext) {
 	resizeCanvas(gl.canvas);
 	gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
@@ -76,53 +351,70 @@ export function render(gl: WebGLRenderingContext) {
 		0);
 
 
-	// Set texture-targeted framebuffer.
-	gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
-	gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+	function draw(framebuffer: WebGLFramebuffer | null) {
+		gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+		// gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
+		const primitiveType = gl.TRIANGLES;
+		const drawOffset = 0;
+		const drawCount = 6;
+		gl.drawArrays(primitiveType, drawOffset, drawCount);
+	}
 
-	const primitiveType = gl.TRIANGLES;
-	const drawOffset = 0;
-	const drawCount = 6;
-	gl.drawArrays(primitiveType, drawOffset, drawCount);
+	draw(framebuffer);
 	
+	function drawWithSpecs(
+		gl: WebGLRenderingContext,
+		program: WebGLProgram,
+		attributes: Array<AttributeSpecification>,
+		uniforms: Array<UniformSpecification>,
+		outputFramebuffer: WebGLFramebuffer | null
+	) {
+		return drawWith(
+			program,
+			buildAttributesDictionary(
+				gl,
+				attributes,
+				program),
+			buildUniformsDictionary(
+				gl,
+				uniforms,
+				program),
+			outputFramebuffer);
+	}
 
-	const invertProgram = createProgramWithFragmentShader(gl, invertShaderSource);
-	const invertProgramAttributes =
-		buildAttributesDictionary(
+	function drawWith(
+		program: WebGLProgram,
+		attributesDictionary: AttributeDictionary,
+		uniformsDictionary: { [iden: string]: UniformData },
+		outputFramebuffer: WebGLFramebuffer | null
+	) {
+		activateProgram(
 			gl,
-			pixelShaderProgramAttributes,
-			invertProgram);
-	activateProgram(
+			program,
+			attributesDictionary,
+			uniformsDictionary);
+
+		draw(outputFramebuffer);
+	}
+
+	drawWithSpecs(
 		gl,
-		invertProgram,
-		invertProgramAttributes,
-		buildUniformsDictionary(
-			gl,
-			[
+		createProgramWithFragmentShader(gl, invertShaderSource),
+		pixelShaderProgramAttributes,
+		[
 				{
 					identifier: 'inputTextureDimensions',
-					value: [gl.canvas.width, gl.canvas.height]
+					value: { type: '2f', data: [gl.canvas.width, gl.canvas.height] }
 				},
 				{
 					identifier: 'inputTexture',
-					value: renderTexture
+					value: { type: 'texture', data: renderTexture }
 				}
 			],
-			invertProgram));
-
-	// this should set the sampler2D uniform, i think
-	gl.bindTexture(gl.TEXTURE_2D, renderTexture);
-
-
-	// draw to canvas
-	gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-	gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-
-
-	gl.drawArrays(primitiveType, drawOffset, drawCount);
-
+		null);
 }
+*/
 
 function createAndSetupTexture(gl: WebGLRenderingContext): WebGLTexture {
 	const texture = gl.createTexture();
@@ -134,6 +426,10 @@ function createAndSetupTexture(gl: WebGLRenderingContext): WebGLTexture {
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+	gl.texImage2D(
+		gl.TEXTURE_2D, 0, gl.RGBA, gl.canvas.width, gl.canvas.height, 0,
+		gl.RGBA, gl.UNSIGNED_BYTE, null);
 
 	if (texture == null) {
 		throw new Error("Failed to create texture");
@@ -192,9 +488,10 @@ function buildAttributesDictionary(
 }
 
 type UniformValue
-	= number
-	| number[]
-	| WebGLTexture
+	= { type: 'f', data: number }
+	| { type: '2f', data: [number, number] }
+	| { type: '3f', data: [number, number, number] }
+	| { type: 'texture', data: WebGLTexture }
 	;
 
 interface UniformSpecification {
@@ -254,20 +551,22 @@ function activateProgram(
 	Object.keys(uniforms)
 		.map(iden => uniforms[iden])
 		.forEach(uniform => {
-			if (typeof uniform.value === 'number') {
-				gl.uniform1f(uniform.location, uniform.value);
-			} else if (uniform.value instanceof WebGLTexture) {
+			if (uniform.value.type === 'f') {
+				gl.uniform1f(uniform.location, uniform.value.data);
+			} else if (uniform.value.type === '2f') {
+				gl.uniform2f(uniform.location, uniform.value.data[0], uniform.value.data[1]);
+			} else if (uniform.value.type === '3f') {
+				gl.uniform3f(
+					uniform.location,
+					uniform.value.data[0],
+					uniform.value.data[1],
+					uniform.value.data[2],
+				);
+			} else if (uniform.value.type === 'texture') {
 				gl.activeTexture(gl.TEXTURE0 + numberOfBoundTextures);
-				gl.bindTexture(gl.TEXTURE_2D, uniform.value);
+				gl.bindTexture(gl.TEXTURE_2D, uniform.value.data);
 				gl.uniform1i(uniform.location, numberOfBoundTextures);
-
 				numberOfBoundTextures++;
-			} else if (uniform.value instanceof Array) {
-				if (uniform.value.length === 2) {
-					gl.uniform2f(uniform.location, uniform.value[0], uniform.value[1]);
-				} else {
-					throw new Error("Unsupported vector length");
-				}
 			}
 		});
 }

@@ -13,7 +13,8 @@ export default glsl`
 			(gl_FragCoord.x + gl_FragCoord.y * resolution.x) * pixelIndexScaling;
 
 		gl_FragColor = vec4(
-				vec3((sin(period * (pixelIndex + t)) + 1.) / 2.),
+				vec2(0.),
+				(sin(period * (pixelIndex + t)) + 1.) / 2.,
 				1);
 	}
 `;
