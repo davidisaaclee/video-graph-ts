@@ -1,12 +1,22 @@
 import { renderGraph, setup } from 'render';
 import { makeGraph } from 'VideoGraph';
 
-let frequency = 60.1;
-
+let lfoFrequency = 60.1;
 (document.getElementById("freq-slider") as HTMLInputElement)
 	.addEventListener("input", evt => {
 		if (evt.target != null) {
-			frequency =
+			lfoFrequency =
+				20000
+				* Math.pow(
+					parseInt((evt.target as HTMLInputElement).value) / 100,
+					2);
+		}
+	});
+let freq = 60.1;
+(document.getElementById("freq2-slider") as HTMLInputElement)
+	.addEventListener("input", evt => {
+		if (evt.target != null) {
+			freq =
 				20000
 				* Math.pow(
 					parseInt((evt.target as HTMLInputElement).value) / 100,
@@ -41,15 +51,14 @@ function renderLoop() {
 			"oscillator": {
 				'frequency': {
 					identifier: 'frequency',
-					value: { type: 'f', data: frequency }
+					value: { type: 'f', data: lfoFrequency }
 				},
-				'inputTextureDimensions': {
-					identifier: 'inputTextureDimensions',
-					value: {
-						type: '2f',
-						data: [gl.canvas.width, gl.canvas.height]
-					}
-				}
+			},
+			"oscillator2": {
+				'frequency': {
+					identifier: 'frequency',
+					value: { type: 'f', data: freq }
+				},
 			}
 		},
 		// "invert",
