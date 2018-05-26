@@ -4,26 +4,28 @@ export default glsl`
 	precision mediump float;
 
 	uniform int t;
-	uniform float phaseWrap;
 	uniform float frequency;
 	uniform vec2 inputTextureDimensions;
+	uniform mat3 transform;
 
 	void main() {
 		vec2 resolution = inputTextureDimensions;
 		float numberOfPixels = resolution.x * resolution.y;
 		float pixelIndexScaling = 1. / numberOfPixels;
 
+		vec2 position =
+			(transform * gl_FragCoord.xyz).xy;
+
 		float pixelIndex =
-				gl_FragCoord.x + gl_FragCoord.y * resolution.x
-				+ float(t) * numberOfPixels
+			position.x + position.y * resolution.x
+			+ float(t) * numberOfPixels
 		;
 
 		float x =
 			pixelIndex
 			* 3.141 * 2.
 			/ numberOfPixels
-			+ phaseWrap
-			;
+		;
 
 		float y =
 			(frequency / 60.) * x;

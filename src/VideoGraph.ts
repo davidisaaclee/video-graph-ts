@@ -1,3 +1,4 @@
+import { mat3 } from 'gl-matrix';
 import { UniformSpecification } from 'utility/glTypes';
 import { createProgram, createShader } from 'utility/glHelpers';
 import vertexShaderSource from 'shaders/vertex';
@@ -31,12 +32,15 @@ export const makeGraph: (gl: WebGLRenderingContext) => VideoGraph = (gl) => ({
 			uniforms: uniformDictFromArray(
 				[
 					{
-						identifier: 'phaseWrap',
-						value: { type: 'f', data: 0 }
-					},
-					{
 						identifier: 'frequency',
 						value: { type: 'f', data: 0.1 }
+					},
+					{
+						identifier: 'transform',
+						value: {
+							type: 'mat3',
+							data: mat3.fromRotation(mat3.create(), 1.1)
+						}
 					}
 				])
 		},
