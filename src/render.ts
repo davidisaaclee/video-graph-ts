@@ -353,6 +353,11 @@ function activateProgram(
 				gl.uniform1i(
 					uniform.location,
 					uniform.value.data);
+			} else if (uniform.value.type === 'mat3') {
+				gl.uniformMatrix3fv(
+					uniform.location,
+					false,
+					uniform.value.data);
 			} else if (uniform.value.type === 'texture') {
 				gl.activeTexture(gl.TEXTURE0 + numberOfBoundTextures);
 				gl.bindTexture(gl.TEXTURE_2D, uniform.value.data);

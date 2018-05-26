@@ -15,6 +15,7 @@ export type UniformValue
 	| { type: '2f', data: [number, number] }
 	| { type: '3f', data: [number, number, number] }
 	| { type: 'i', data: number }
+	| { type: 'mat3', data: Float32Array }
 	| { type: 'texture', data: WebGLTexture }
 	;
 
