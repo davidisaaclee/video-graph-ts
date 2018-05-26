@@ -9,32 +9,30 @@ export default glsl`
 	uniform vec2 inputTextureDimensions;
 
 	void main() {
-		vec2 resolution = vec2(800., 800.);
+		vec2 resolution = inputTextureDimensions;
 		float numberOfPixels = resolution.x * resolution.y;
-		// vec2 resolution = inputTextureDimensions;
 		float pixelIndexScaling = 1. / numberOfPixels;
 
 		float pixelIndex =
 				gl_FragCoord.x + gl_FragCoord.y * resolution.x
-				+ float(t) * numberOfPixels;
+				+ float(t) * numberOfPixels
+		;
 
 		float x =
-			3.141 * 2.
-			* pixelIndex
+			pixelIndex
+			* 3.141 * 2.
 			/ numberOfPixels
 		// TODO: Phase wrap
 			+ phaseWrap * 0.
 			;
 
 		float y =
-			frequency * x;
+			(frequency / 60.) * x;
 
 
 		gl_FragColor = vec4(
-			0.,
-			vec2(
-				(sin(y) + 1.) / 2.
-			),
+			(sin(y) + 1.) / 2.,
+			vec2(0.),
 			1);
 	}
 
