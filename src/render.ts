@@ -7,6 +7,8 @@ import { resizeCanvas } from 'utility/resizeCanvas';
 import {
 	Graph, resolveDependencies, edgesWithSource
 } from 'utility/Graph';
+import { indexBy } from 'utility/indexBy';
+import { mapValues } from 'utility/mapValues';
 
 import { VideoGraph, makeGraph } from 'VideoGraph';
 
@@ -134,16 +136,16 @@ export function renderGraph(
 			});
 		}
 
-		const uniformsWithoutRuntimeUniforms = [
-			...(timeUniformIdentifier == null 
-				? []
-				: [{
+		const uniformsWithoutRuntimeUniforms = Object.assign(
+			{},
+			timeUniformIdentifier == null ? {} : {
+				[timeUniformIdentifier]: {
 					identifier: timeUniformIdentifier,
 					value: { type: 'i', data: frameIndex } as UniformValue
-				}]),
-			...(constantUniforms == null ? [] : constantUniforms),
-			...textureUniforms
-		];
+				}
+			},
+			constantUniforms == null ? {} : constantUniforms,
+			indexBy(s => s.identifier, textureUniforms));
 
 		drawWithSpecs(
 			gl,
@@ -169,7 +171,7 @@ export function renderGraph(
 		gl: WebGLRenderingContext,
 		program: WebGLProgram,
 		attributes: Array<AttributeSpecification>,
-		uniforms: Array<UniformSpecification>,
+		uniforms: { [iden: string]: UniformSpecification },
 		outputFramebuffer: WebGLFramebuffer | null
 	) {
 		return drawWith(
@@ -262,9 +264,24 @@ function buildAttributesDictionary(
 
 function buildUniformsDictionary(
 	gl: WebGLRenderingContext,
-	uniformSpecifications: UniformSpecification[],
+	uniformSpecifications: { [iden: string]: UniformSpecification },
 	program: WebGLProgram
 ): { [iden: string]: UniformData } {
+	return mapValues(
+		uniformSpecifications,
+		spec => {
+			const location = gl.getUniformLocation(program, spec.identifier);
+			if (location == null) {
+				throw new Error("Invalid uniform");
+			}
+
+			return {
+				location,
+				value: spec.value
+			};
+		});
+
+	/*
 	return uniformSpecifications
 		.map(spec => {
 			const location = gl.getUniformLocation(program, spec.identifier);
@@ -280,6 +297,7 @@ function buildUniformsDictionary(
 			};
 		})
 		.reduce((acc, elm) => Object.assign(acc, elm), {});
+		*/
 }
 
 

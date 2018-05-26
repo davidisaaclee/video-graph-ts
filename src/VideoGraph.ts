@@ -7,12 +7,13 @@ import invertShaderSource from 'shaders/invertRGB';
 import {
 	Graph, resolveDependencies, edgesWithSource
 } from 'utility/Graph';
+import { indexBy } from 'utility/indexBy';
 
 export interface PluginNode {
 	program: WebGLProgram;
 	inletToUniformIdentifiers: { [inletKey: string]: string };
 	timeUniformIdentifier?: string;
-	uniforms?: UniformSpecification[];
+	uniforms?: { [identifier: string]: UniformSpecification };
 }
 
 export interface PluginConnection {
@@ -27,23 +28,24 @@ export const makeGraph: (gl: WebGLRenderingContext) => VideoGraph = (gl) => ({
 			program: createProgramWithFragmentShader(gl, fragmentShaderSource),
 			inletToUniformIdentifiers: {},
 			timeUniformIdentifier: 't',
-			uniforms: [
-				{
-					identifier: 'phaseWrap',
-					value: { type: 'f', data: 0 }
-				},
-				{
-					identifier: 'frequency',
-					value: { type: 'f', data: 0.1 }
-				},
-			]
+			uniforms: uniformDictFromArray(
+				[
+					{
+						identifier: 'phaseWrap',
+						value: { type: 'f', data: 0 }
+					},
+					{
+						identifier: 'frequency',
+						value: { type: 'f', data: 0.1 }
+					}
+				])
 		},
 		'constant': {
 			program: createProgramWithFragmentShader(gl, constantFragmentSource),
 			inletToUniformIdentifiers: {},
-			uniforms: [
+			uniforms: uniformDictFromArray([
 				{ identifier: 'value', value: { type: '3f', data: [1, 1, 0] } }
-			]
+			])
 		},
 		'invert': {
 			program: createProgramWithFragmentShader(gl, invertShaderSource),
@@ -83,4 +85,8 @@ function createProgramWithFragmentShader(
 			fragmentShaderSource);
 
 	return createProgram(gl, [vertexShader, fragmentShader]);
+}
+
+function uniformDictFromArray(uniforms: UniformSpecification[]): { [iden: string]: UniformSpecification } {
+	return indexBy(s => s.identifier, uniforms);
 }
