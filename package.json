@@ -15,6 +15,7 @@
     "rimraf": "^2.6.2",
     "rollup": "^0.59.1",
     "rollup-plugin-glsl": "^1.2.0",
+    "rollup-plugin-node-resolve": "^3.3.0",
     "rollup-plugin-typescript": "^0.8.1",
     "typescript": "^2.8.3"
   }
