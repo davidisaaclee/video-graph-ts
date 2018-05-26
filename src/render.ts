@@ -120,7 +120,7 @@ export function renderGraph(
 			})
 			.map(({ inletKey, sourceNodeKey }) => {
 				if (sourceNodeKey == null) {
-					throw new Error("TODO");
+					throw new Error(`No source node for inlet ${inletKey} of node ${step.nodeKey}`);
 				}
 
 				return {

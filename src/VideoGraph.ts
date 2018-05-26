@@ -27,7 +27,9 @@ export const makeGraph: (gl: WebGLRenderingContext) => VideoGraph = (gl) => ({
 	nodes: {
 		'oscillator': {
 			program: createProgramWithFragmentShader(gl, fragmentShaderSource),
-			inletToUniformIdentifiers: {},
+			inletToUniformIdentifiers: {
+				'rotationTheta': 'rotationTheta'
+			},
 			timeUniformIdentifier: 't',
 			uniforms: uniformDictFromArray(
 				[
@@ -35,20 +37,29 @@ export const makeGraph: (gl: WebGLRenderingContext) => VideoGraph = (gl) => ({
 						identifier: 'frequency',
 						value: { type: 'f', data: 0.1 }
 					},
-					{
-						identifier: 'transform',
-						value: {
-							type: 'mat3',
-							data: mat3.fromRotation(mat3.create(), 1.1)
-						}
-					}
 				])
 		},
+
+		'oscillator2': {
+			program: createProgramWithFragmentShader(gl, fragmentShaderSource),
+			inletToUniformIdentifiers: {
+				'rotationTheta': 'rotationTheta'
+			},
+			timeUniformIdentifier: 't',
+			uniforms: uniformDictFromArray(
+				[
+					{
+						identifier: 'frequency',
+						value: { type: 'f', data: 200 }
+					},
+				])
+		},
+
 		'constant': {
 			program: createProgramWithFragmentShader(gl, constantFragmentSource),
 			inletToUniformIdentifiers: {},
 			uniforms: uniformDictFromArray([
-				{ identifier: 'value', value: { type: '3f', data: [1, 1, 0] } }
+				{ identifier: 'value', value: { type: '3f', data: [0.1, 0.5, 0.2] } }
 			])
 		},
 		'invert': {
@@ -63,11 +74,21 @@ export const makeGraph: (gl: WebGLRenderingContext) => VideoGraph = (gl) => ({
 			dst: 'constant',
 			metadata: { inlet: 'input' }
 		},
-		*/
 		'osc <- invert': {
 			src: 'invert',
 			dst: 'oscillator',
 			metadata: { inlet: 'input' }
+		}
+		*/
+		'osc.rotation <- constant': {
+			src: 'oscillator',
+			dst: 'constant',
+			metadata: { inlet: 'rotationTheta' }
+		},
+		'osc2.rotation <- osc': {
+			src: 'oscillator2',
+			dst: 'oscillator',
+			metadata: { inlet: 'rotationTheta' }
 		}
 	}
 });

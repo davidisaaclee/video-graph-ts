@@ -53,7 +53,7 @@ function renderLoop() {
 			}
 		},
 		// "invert",
-		"oscillator",
+		"oscillator2",
 		Math.floor((Date.now() - start) / (1000 / fps))
 	);
 	window.requestAnimationFrame(renderLoop);
