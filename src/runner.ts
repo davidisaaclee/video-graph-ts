@@ -1,20 +1,18 @@
 import { renderGraph, setup } from 'render';
 import { makeGraph } from 'VideoGraph';
 
-
 let frequency = 60.1;
-function setFreq(f: number) {
-	frequency = f;
-	console.log("Frequency:", frequency);
-}
 
 (document.getElementById("freq-slider") as HTMLInputElement)
 	.addEventListener("input", evt => {
 		if (evt.target != null) {
-			setFreq(2000 * Math.pow(parseInt((evt.target as HTMLInputElement).value) / 100, 2));
+			frequency =
+				20000
+				* Math.pow(
+					parseInt((evt.target as HTMLInputElement).value) / 100,
+					2);
 		}
 	});
-
 
 
 const stage = document.getElementById("stage") as HTMLCanvasElement;
