@@ -22,8 +22,7 @@ export default glsl`
 			pixelIndex
 			* 3.141 * 2.
 			/ numberOfPixels
-		// TODO: Phase wrap
-			+ phaseWrap * 0.
+			+ phaseWrap
 			;
 
 		float y =
