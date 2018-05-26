@@ -59,7 +59,7 @@ let framebuffers: { [iden: string]: WebGLFramebuffer | null } = {};
 export function renderGraph(
 	gl: WebGLRenderingContext,
 	graph: VideoGraph,
-	// runtimeUniforms: { [nodeKey: string]: UniformSpecification[] },
+	runtimeUniforms: { [nodeKey: string]: { [iden: string]: UniformSpecification } },
 	outputNodeKey: string,
 	frameIndex: number,
 ) {
@@ -145,7 +145,11 @@ export function renderGraph(
 				}
 			},
 			constantUniforms == null ? {} : constantUniforms,
-			indexBy(s => s.identifier, textureUniforms));
+			indexBy(s => s.identifier, textureUniforms),
+			runtimeUniforms[step.nodeKey] == null
+				? {}
+				: runtimeUniforms[step.nodeKey]
+		);
 
 		drawWithSpecs(
 			gl,
@@ -204,8 +208,17 @@ export function renderGraph(
 
 }
 
-export function render(gl: WebGLRenderingContext, frameIndex: number) {
-	renderGraph(gl, makeGraph(gl), "invert", frameIndex);
+export function render(
+	gl: WebGLRenderingContext,
+	frameIndex: number,
+	runtimeUniforms: { [nodeKey: string]: { [iden: string]: UniformSpecification } },
+) {
+	renderGraph(
+		gl,
+		makeGraph(gl),
+		runtimeUniforms,
+		"invert",
+		frameIndex);
 }
 
 
