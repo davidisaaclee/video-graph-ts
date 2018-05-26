@@ -1,74 +1,22 @@
-import vertexShaderSource from 'shaders/vertex';
-import fragmentShaderSource from 'shaders/oscillator';
-import constantFragmentSource from 'shaders/constantColor';
-import invertShaderSource from 'shaders/invertRGB';
-import { AttributeType, BufferData } from 'utility/glTypes';
 import {
-	createProgram, createShader, createBuffer, bindVertexAttribute
-} from 'utility/glHelpers';
+	AttributeType, BufferData,
+	UniformData, UniformSpecification, UniformValue
+} from 'utility/glTypes';
+import { createBuffer, bindVertexAttribute } from 'utility/glHelpers';
 import { resizeCanvas } from 'utility/resizeCanvas';
 import {
 	Graph, resolveDependencies, edgesWithSource
 } from 'utility/Graph';
 
-interface PluginNode {
-	program: WebGLProgram;
-	inletToUniformIdentifiers: { [inletKey: string]: string };
-	timeUniformIdentifier?: string;
-	uniforms?: UniformSpecification[];
-}
+import { VideoGraph, makeGraph } from 'VideoGraph';
 
-interface PluginConnection {
-	inlet: string;
-}
-
-type VideoGraph = Graph<PluginNode, PluginConnection>;
-
-const makeGraph: (gl: WebGLRenderingContext) => VideoGraph = (gl) => ({
-	nodes: {
-		'oscillator': {
-			program: createProgramWithFragmentShader(gl, fragmentShaderSource),
-			inletToUniformIdentifiers: {},
-			timeUniformIdentifier: 't',
-		},
-		'constant': {
-			program: createProgramWithFragmentShader(gl, constantFragmentSource),
-			inletToUniformIdentifiers: {},
-			uniforms: [
-				{ identifier: 'value', value: { type: '3f', data: [1, 0, 0] } }
-			]
-		},
-		'invert': {
-			program: createProgramWithFragmentShader(gl, invertShaderSource),
-			inletToUniformIdentifiers: { 'input': 'inputTexture' }
-		}
-	},
-	edges: {
-		/*
-		'constant <- invert': {
-			src: 'invert',
-			dst: 'constant',
-			metadata: { inlet: 'input' }
-		},
-		*/
-		'osc <- invert': {
-			src: 'invert',
-			dst: 'oscillator',
-			metadata: { inlet: 'input' }
-		}
-	}
-});
-
-function renderGraph(
-	gl: WebGLRenderingContext,
-	graph: VideoGraph,
-	outputNodeKey: string,
-	time: number,
-) {
+let pixelShaderProgramAttributes: AttributeSpecification[] | null = null;
+export function setup(gl: WebGLRenderingContext) {
 	resizeCanvas(gl.canvas);
+
 	gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
-	const pixelShaderProgramAttributes = [
+	pixelShaderProgramAttributes = [
 		{
 			identifier: 'position',
 			type: 'vec2',
@@ -100,15 +48,35 @@ function renderGraph(
 				gl.STATIC_DRAW)
 		},
 	] as AttributeSpecification[];
+}
 
-	const textures = Object.keys(graph.nodes)
-		.map(key => ({ [key]: createAndSetupTexture(gl) }))
+// TODO: Keep texture cache local to render call
+let textures: { [iden: string]: WebGLTexture } = {};
+let framebuffers: { [iden: string]: WebGLFramebuffer | null } = {};
+
+export function renderGraph(
+	gl: WebGLRenderingContext,
+	graph: VideoGraph,
+	// runtimeUniforms: { [nodeKey: string]: UniformSpecification[] },
+	outputNodeKey: string,
+	frameIndex: number,
+) {
+	// Clear the canvas AND the depth buffer.
+	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+	// NOTE: this iterates through nodes that we don't need to make textures for
+	textures = Object.keys(graph.nodes)
+		.map(key => ({ [key]: textures[key] || createAndSetupTexture(gl) }))
 		.reduce((acc, elm) => Object.assign(acc, elm), {});
 
-	const framebuffers = Object.keys(textures)
+	framebuffers = Object.keys(textures)
 		.map(key => {
 			if (key === outputNodeKey) {
 				return { [key]: null };
+			}
+
+			if (framebuffers[key] != null) {
+				return { [key]: framebuffers[key] };
 			}
 
 			const framebuffer = gl.createFramebuffer();
@@ -123,7 +91,6 @@ function renderGraph(
 			return { [key]: framebuffer };
 		})
 		.reduce((acc, elm) => Object.assign(acc, elm), {});
-
 	const steps = resolveDependencies(graph, outputNodeKey);
 
 	for (const step of steps) {
@@ -134,7 +101,7 @@ function renderGraph(
 		const attributes =
 			buildAttributesDictionary(
 				gl,
-				pixelShaderProgramAttributes,
+				pixelShaderProgramAttributes == null ? [] : pixelShaderProgramAttributes,
 				program);
 
 		const edges = Array.from(edgesWithSource(step.nodeKey, graph));
@@ -167,20 +134,22 @@ function renderGraph(
 			});
 		}
 
+		const uniformsWithoutRuntimeUniforms = [
+			...(timeUniformIdentifier == null 
+				? []
+				: [{
+					identifier: timeUniformIdentifier,
+					value: { type: 'i', data: frameIndex } as UniformValue
+				}]),
+			...(constantUniforms == null ? [] : constantUniforms),
+			...textureUniforms
+		];
+
 		drawWithSpecs(
 			gl,
 			program,
-			pixelShaderProgramAttributes,
-			[
-				...(timeUniformIdentifier == null 
-					? []
-					: [{
-						identifier: timeUniformIdentifier,
-						value: { type: 'f', data: time } as UniformValue
-					}]),
-				...(constantUniforms == null ? [] : constantUniforms),
-				...textureUniforms
-			],
+			pixelShaderProgramAttributes == null ? [] : pixelShaderProgramAttributes,
+			uniformsWithoutRuntimeUniforms,
 			framebuffers[step.nodeKey]
 		);
 	}
@@ -233,8 +202,8 @@ function renderGraph(
 
 }
 
-export function render(gl: WebGLRenderingContext, time: number) {
-	renderGraph(gl, makeGraph(gl), "invert", time);
+export function render(gl: WebGLRenderingContext, frameIndex: number) {
+	renderGraph(gl, makeGraph(gl), "invert", frameIndex);
 }
 
 
@@ -268,24 +237,6 @@ interface AttributeData {
 
 type AttributeDictionary = { [identifier: string]: AttributeData };
 
-function createProgramWithFragmentShader(
-	gl: WebGLRenderingContext,
-	fragmentShaderSource: string
-): WebGLProgram  {
-	const vertexShader =
-		createShader(
-			gl,
-			gl.VERTEX_SHADER,
-			vertexShaderSource);
-
-	const fragmentShader =
-		createShader(
-			gl,
-			gl.FRAGMENT_SHADER,
-			fragmentShaderSource);
-
-	return createProgram(gl, [vertexShader, fragmentShader]);
-}
 
 interface AttributeSpecification {
 	identifier: string;
@@ -307,23 +258,6 @@ function buildAttributesDictionary(
 			}
 		}))
 		.reduce((acc, elm) => Object.assign(acc, elm), {});
-}
-
-type UniformValue
-	= { type: 'f', data: number }
-	| { type: '2f', data: [number, number] }
-	| { type: '3f', data: [number, number, number] }
-	| { type: 'texture', data: WebGLTexture }
-	;
-
-interface UniformSpecification {
-	identifier: string;
-	value: UniformValue;
-}
-
-interface UniformData {
-	location: WebGLUniformLocation;
-	value: UniformValue;
 }
 
 function buildUniformsDictionary(
@@ -384,6 +318,10 @@ function activateProgram(
 					uniform.value.data[1],
 					uniform.value.data[2],
 				);
+			} else if (uniform.value.type === 'i') {
+				gl.uniform1i(
+					uniform.location,
+					uniform.value.data);
 			} else if (uniform.value.type === 'texture') {
 				gl.activeTexture(gl.TEXTURE0 + numberOfBoundTextures);
 				gl.bindTexture(gl.TEXTURE_2D, uniform.value.data);
