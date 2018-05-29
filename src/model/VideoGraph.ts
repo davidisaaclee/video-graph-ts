@@ -16,7 +16,7 @@ export interface PluginNode {
 }
 
 export interface PluginConnection {
-	inlet: string;
+	uniform: string;
 }
 
 export type VideoGraph = Graph<PluginNode, PluginConnection>;

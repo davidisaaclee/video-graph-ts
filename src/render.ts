@@ -110,7 +110,7 @@ export function renderGraph(
 			.map(key => graph.edges[key])
 			.map(({ dst, metadata }) => {
 				return {
-					identifier: metadata.inlet,
+					identifier: metadata.uniform,
 					value: {
 						type: 'texture',
 						data: textures[dst]
