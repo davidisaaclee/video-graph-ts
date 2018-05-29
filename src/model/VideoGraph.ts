@@ -1,13 +1,7 @@
-import { mat3 } from 'gl-matrix';
 import { UniformSpecification } from 'utility/glTypes';
 import { createProgram, createShader } from 'utility/glHelpers';
 import vertexShaderSource from 'shaders/vertex';
-import fragmentShaderSource from 'shaders/oscillator';
-import constantFragmentSource from 'shaders/constantColor';
-import invertShaderSource from 'shaders/invertRGB';
-import {
-	Graph, resolveDependencies, edgesWithSource
-} from 'utility/Graph';
+import { Graph } from 'utility/Graph';
 
 export interface PluginNode {
 	program: WebGLProgram;
