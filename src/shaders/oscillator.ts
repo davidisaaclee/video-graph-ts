@@ -4,7 +4,7 @@ export default glsl`
 	precision mediump float;
 
 	const float TWO_PI = 6.28318530718;
-	const float N_SCANLINES = 1000.;
+	const float N_SCANLINES = 500.;
 
 	// in frames
 	uniform float phaseOffset;
@@ -29,23 +29,20 @@ export default glsl`
 	}
 
 	void main() {
-		vec2 resolution =
-			inputTextureDimensions;
-
 		vec2 position =
 			rotate(
 				gl_FragCoord.xy,
 				luminance(texture2D(
 					rotationTheta,
 					gl_FragCoord.xy / inputTextureDimensions).rgb) * TWO_PI);
+		highp vec2 uv =
+			position / inputTextureDimensions;
 
-		vec2 uv =
-			position / resolution;
 		float pixelIndex =
-			uv.x / N_SCANLINES + floor(uv.y * N_SCANLINES) / N_SCANLINES;
+			uv.x / N_SCANLINES + (uv.y - mod(uv.y, 1. / N_SCANLINES));
 
 		gl_FragColor = vec4(
-			(sin(frequency * TWO_PI * pixelIndex + phaseOffset * TWO_PI) + 1.) / 2.,
+			(sin(mod(frequency * TWO_PI * pixelIndex + phaseOffset * TWO_PI, TWO_PI)) + 1.) / 2.,
 			vec2(0.),
 			1);
 	}
