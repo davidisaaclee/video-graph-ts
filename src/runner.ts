@@ -1,14 +1,14 @@
 import { renderGraph, setup } from 'render';
 import { makeGraph } from 'VideoGraph';
 
-let lfoFrequency = 60.1;
+let lfoFrequency = 60;
 (document.getElementById("freq-slider") as HTMLInputElement)
 	.addEventListener("input", evt => {
 		if (evt.target != null) {
 			lfoFrequency =
-				20000
+				200
 				* Math.pow(
-					parseInt((evt.target as HTMLInputElement).value) / 100,
+					parseFloat((evt.target as HTMLInputElement).value) / 100,
 					2);
 		}
 	});
@@ -19,7 +19,7 @@ let freq = 60.1;
 			freq =
 				20000
 				* Math.pow(
-					parseInt((evt.target as HTMLInputElement).value) / 100,
+					parseFloat((evt.target as HTMLInputElement).value) / 100,
 					2);
 		}
 	});

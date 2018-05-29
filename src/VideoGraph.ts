@@ -79,15 +79,20 @@ export const makeGraph: (gl: WebGLRenderingContext) => VideoGraph = (gl) => ({
 			dst: 'oscillator',
 			metadata: { inlet: 'input' }
 		}
-		*/
 		'osc.rotation <- constant': {
 			src: 'oscillator',
 			dst: 'constant',
 			metadata: { inlet: 'rotationTheta' }
 		},
+		*/
 		'osc2.rotation <- osc': {
 			src: 'oscillator2',
 			dst: 'oscillator',
+			metadata: { inlet: 'rotationTheta' }
+		},
+		'osc.rotation <- osc2': {
+			src: 'oscillator',
+			dst: 'oscillator2',
 			metadata: { inlet: 'rotationTheta' }
 		}
 	}
