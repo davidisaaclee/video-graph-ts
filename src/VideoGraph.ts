@@ -30,7 +30,7 @@ export const makeGraph: (gl: WebGLRenderingContext) => VideoGraph = (gl) => ({
 			inletToUniformIdentifiers: {
 				'rotationTheta': 'rotationTheta'
 			},
-			timeUniformIdentifier: 't',
+			// timeUniformIdentifier: 't',
 			uniforms: uniformDictFromArray(
 				[
 					{
@@ -45,7 +45,7 @@ export const makeGraph: (gl: WebGLRenderingContext) => VideoGraph = (gl) => ({
 			inletToUniformIdentifiers: {
 				'rotationTheta': 'rotationTheta'
 			},
-			timeUniformIdentifier: 't',
+			// timeUniformIdentifier: 't',
 			uniforms: uniformDictFromArray(
 				[
 					{

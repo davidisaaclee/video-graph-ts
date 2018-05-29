@@ -44,6 +44,9 @@ function renderLoop() {
 		return;
 	}
 
+	const frameIndex =
+		Math.floor((Date.now() - start) / (1000 / fps));
+
 	renderGraph(
 		gl as WebGLRenderingContext,
 		graph,
@@ -53,17 +56,31 @@ function renderLoop() {
 					identifier: 'frequency',
 					value: { type: 'f', data: lfoFrequency }
 				},
+				'phaseOffset': {
+					identifier: 'phaseOffset',
+					value: {
+						type: 'f',
+						data: (frameIndex * 2 * Math.PI / lfoFrequency) % 1
+					}
+				}
 			},
 			"oscillator2": {
 				'frequency': {
 					identifier: 'frequency',
 					value: { type: 'f', data: freq }
 				},
+				'phaseOffset': {
+					identifier: 'phaseOffset',
+					value: {
+						type: 'f',
+						data: (frameIndex * 2 * Math.PI / freq) % 1
+					}
+				}
 			}
 		},
 		// "invert",
 		"oscillator2",
-		Math.floor((Date.now() - start) / (1000 / fps))
+		frameIndex
 	);
 	window.requestAnimationFrame(renderLoop);
 }
