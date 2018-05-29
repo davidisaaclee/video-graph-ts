@@ -9,8 +9,7 @@ import {
 } from 'utility/Graph';
 import { indexBy } from 'utility/indexBy';
 import { mapValues } from 'utility/mapValues';
-
-import { VideoGraph, makeGraph } from 'VideoGraph';
+import { VideoGraph } from 'VideoGraph';
 
 let pixelShaderProgramAttributes: AttributeSpecification[] | null = null;
 export function setup(gl: WebGLRenderingContext) {
@@ -208,18 +207,6 @@ export function renderGraph(
 
 }
 
-export function render(
-	gl: WebGLRenderingContext,
-	frameIndex: number,
-	runtimeUniforms: { [nodeKey: string]: { [iden: string]: UniformSpecification } },
-) {
-	renderGraph(
-		gl,
-		makeGraph(gl),
-		runtimeUniforms,
-		"invert",
-		frameIndex);
-}
 
 
 function createAndSetupTexture(gl: WebGLRenderingContext): WebGLTexture {

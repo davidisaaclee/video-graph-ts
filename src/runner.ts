@@ -1,5 +1,95 @@
 import { renderGraph, setup } from 'render';
-import { makeGraph } from 'VideoGraph';
+import { VideoGraph, createProgramWithFragmentShader } from 'VideoGraph';
+import vertexShaderSource from 'shaders/vertex';
+import fragmentShaderSource from 'shaders/oscillator';
+import constantFragmentSource from 'shaders/constantColor';
+import invertShaderSource from 'shaders/invertRGB';
+import { UniformSpecification } from 'utility/glTypes';
+import { indexBy } from 'utility/indexBy';
+
+function uniformDictFromArray(uniforms: UniformSpecification[]): { [iden: string]: UniformSpecification } {
+	return indexBy(s => s.identifier, uniforms);
+}
+
+const makeGraph: (gl: WebGLRenderingContext) => VideoGraph = (gl) => ({
+	nodes: {
+		'oscillator': {
+			program: createProgramWithFragmentShader(gl, fragmentShaderSource),
+			inletToUniformIdentifiers: {
+				'rotationTheta': 'rotationTheta'
+			},
+			// timeUniformIdentifier: 't',
+			uniforms: uniformDictFromArray(
+				[
+					{
+						identifier: 'frequency',
+						value: { type: 'f', data: 0.1 }
+					},
+				])
+		},
+
+		'oscillator2': {
+			program: createProgramWithFragmentShader(gl, fragmentShaderSource),
+			inletToUniformIdentifiers: {
+				'rotationTheta': 'rotationTheta'
+			},
+			// timeUniformIdentifier: 't',
+			uniforms: uniformDictFromArray(
+				[
+					{
+						identifier: 'frequency',
+						value: { type: 'f', data: 200 }
+					},
+				])
+		},
+
+		'constant': {
+			program: createProgramWithFragmentShader(gl, constantFragmentSource),
+			inletToUniformIdentifiers: {},
+			uniforms: uniformDictFromArray([
+				{
+					identifier: 'value',
+					value: { type: '3f', data: [1, 0, 0] }
+				}
+			])
+		},
+		'invert': {
+			program: createProgramWithFragmentShader(gl, invertShaderSource),
+			inletToUniformIdentifiers: { 'input': 'inputTexture' }
+		}
+	},
+	edges: {
+		/*
+		'constant <- invert': {
+			src: 'invert',
+			dst: 'constant',
+			metadata: { inlet: 'input' }
+		},
+		'osc <- invert': {
+			src: 'invert',
+			dst: 'oscillator',
+			metadata: { inlet: 'input' }
+		}
+		*/
+		'osc.rotation <- constant': {
+			src: 'oscillator',
+			dst: 'constant',
+			metadata: { inlet: 'rotationTheta' }
+		},
+		'osc2.rotation <- osc': {
+			src: 'oscillator2',
+			dst: 'oscillator',
+			metadata: { inlet: 'rotationTheta' }
+		},
+		/*
+		'osc.rotation <- osc2': {
+			src: 'oscillator',
+			dst: 'oscillator2',
+			metadata: { inlet: 'rotationTheta' }
+		}
+		*/
+	}
+});
 
 let lfoFrequency = 502;
 (document.getElementById("freq-slider") as HTMLInputElement)
