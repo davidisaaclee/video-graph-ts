@@ -11,7 +11,6 @@ import {
 
 export interface PluginNode {
 	program: WebGLProgram;
-	timeUniformIdentifier?: string;
 	uniforms?: { [identifier: string]: UniformSpecification };
 }
 

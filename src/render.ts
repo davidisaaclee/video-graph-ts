@@ -97,7 +97,6 @@ export function renderGraph(
 	for (const step of steps) {
 		const {
 			program, uniforms: constantUniforms,
-			timeUniformIdentifier
 		} = graph.nodes[step.nodeKey];
 		const attributes =
 			buildAttributesDictionary(
@@ -127,12 +126,6 @@ export function renderGraph(
 
 		const uniformsWithoutRuntimeUniforms = Object.assign(
 			{},
-			timeUniformIdentifier == null ? {} : {
-				[timeUniformIdentifier]: {
-					identifier: timeUniformIdentifier,
-					value: { type: 'i', data: frameIndex } as UniformValue
-				}
-			},
 			constantUniforms == null ? {} : constantUniforms,
 			indexBy(s => s.identifier, textureUniforms),
 			runtimeUniforms[step.nodeKey] == null
