@@ -9,7 +9,7 @@ import {
 } from 'utility/Graph';
 import { indexBy } from 'utility/indexBy';
 import { mapValues } from 'utility/mapValues';
-import { VideoGraph } from 'VideoGraph';
+import { VideoGraph } from 'model/VideoGraph';
 
 let pixelShaderProgramAttributes: AttributeSpecification[] | null = null;
 export function setup(gl: WebGLRenderingContext) {

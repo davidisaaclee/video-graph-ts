@@ -1,5 +1,5 @@
 import { renderGraph, setup } from 'render';
-import { VideoGraph, createProgramWithFragmentShader } from 'VideoGraph';
+import { VideoGraph, createProgramWithFragmentShader } from 'model/VideoGraph';
 import vertexShaderSource from 'shaders/vertex';
 import fragmentShaderSource from 'shaders/oscillator';
 import constantFragmentSource from 'shaders/constantColor';
