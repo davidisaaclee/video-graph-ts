@@ -9,7 +9,7 @@ export interface PluginNode {
 }
 
 export interface PluginConnection {
-	uniform: string;
+	uniformIdentifier: string;
 }
 
 export type VideoGraph = Graph<PluginNode, PluginConnection>;

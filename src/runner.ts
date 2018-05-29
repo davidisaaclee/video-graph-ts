@@ -66,12 +66,12 @@ const makeGraph: (gl: WebGLRenderingContext) => VideoGraph = (gl) => ({
 		'osc.rotation <- constant': {
 			src: 'oscillator',
 			dst: 'constant',
-			metadata: { uniform: 'rotationTheta' }
+			metadata: { uniformIdentifier: 'rotationTheta' }
 		},
 		'osc2.rotation <- osc': {
 			src: 'oscillator2',
 			dst: 'oscillator',
-			metadata: { uniform: 'rotationTheta' }
+			metadata: { uniformIdentifier: 'rotationTheta' }
 		},
 		/*
 		'osc.rotation <- osc2': {
