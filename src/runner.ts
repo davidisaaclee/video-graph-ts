@@ -1,12 +1,12 @@
 import { renderGraph, setup } from 'render';
 import { makeGraph } from 'VideoGraph';
 
-let lfoFrequency = 60;
+let lfoFrequency = 502;
 (document.getElementById("freq-slider") as HTMLInputElement)
 	.addEventListener("input", evt => {
 		if (evt.target != null) {
 			lfoFrequency =
-				200
+				2000
 				* Math.pow(
 					parseFloat((evt.target as HTMLInputElement).value) / 100,
 					2);
@@ -55,6 +55,10 @@ function renderLoop() {
 				'frequency': {
 					identifier: 'frequency',
 					value: { type: 'f', data: lfoFrequency }
+				},
+				'inputTextureDimensions': {
+					identifier: 'inputTextureDimensions',
+					value: { type: '2f', data: [gl.canvas.width, gl.canvas.height] }
 				},
 				'phaseOffset': {
 					identifier: 'phaseOffset',

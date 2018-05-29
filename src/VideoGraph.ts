@@ -59,7 +59,10 @@ export const makeGraph: (gl: WebGLRenderingContext) => VideoGraph = (gl) => ({
 			program: createProgramWithFragmentShader(gl, constantFragmentSource),
 			inletToUniformIdentifiers: {},
 			uniforms: uniformDictFromArray([
-				{ identifier: 'value', value: { type: '3f', data: [0.1, 0.5, 0.2] } }
+				{
+					identifier: 'value',
+					value: { type: '3f', data: [1, 0, 0] }
+				}
 			])
 		},
 		'invert': {
@@ -79,22 +82,24 @@ export const makeGraph: (gl: WebGLRenderingContext) => VideoGraph = (gl) => ({
 			dst: 'oscillator',
 			metadata: { inlet: 'input' }
 		}
+		*/
 		'osc.rotation <- constant': {
 			src: 'oscillator',
 			dst: 'constant',
 			metadata: { inlet: 'rotationTheta' }
 		},
-		*/
 		'osc2.rotation <- osc': {
 			src: 'oscillator2',
 			dst: 'oscillator',
 			metadata: { inlet: 'rotationTheta' }
 		},
+		/*
 		'osc.rotation <- osc2': {
 			src: 'oscillator',
 			dst: 'oscillator2',
 			metadata: { inlet: 'rotationTheta' }
 		}
+		*/
 	}
 });
 
