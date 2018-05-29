@@ -4,10 +4,17 @@ export default glsl`
 	precision mediump float;
 
 	const float TWO_PI = 6.28318530718;
+	const float N_SCANLINES = 1000.;
 
-	uniform int t;
+	// in frames
+	uniform float phaseOffset;
+
+	// in cycles / frame
 	uniform float frequency;
+
+	// todo: change to ivec2
 	uniform vec2 inputTextureDimensions;
+
 	uniform sampler2D rotationTheta;
 
 	vec2 rotate(vec2 v, float a) {
@@ -22,9 +29,8 @@ export default glsl`
 	}
 
 	void main() {
-		vec2 resolution = inputTextureDimensions;
-		float numberOfPixels = resolution.x * resolution.y;
-		float pixelIndexScaling = 1. / numberOfPixels;
+		vec2 resolution =
+			inputTextureDimensions;
 
 		vec2 position =
 			rotate(
@@ -33,23 +39,13 @@ export default glsl`
 					rotationTheta,
 					gl_FragCoord.xy / inputTextureDimensions).rgb) * TWO_PI);
 
+		vec2 uv =
+			position / resolution;
 		float pixelIndex =
-			position.x + position.y * resolution.x
-			+ float(t) * numberOfPixels
-		;
-
-		float x =
-			pixelIndex
-			* TWO_PI
-			/ numberOfPixels
-		;
-
-		float y =
-			(frequency / 60.) * x;
-
+			uv.x / N_SCANLINES + floor(uv.y * N_SCANLINES) / N_SCANLINES;
 
 		gl_FragColor = vec4(
-			(sin(y) + 1.) / 2.,
+			(sin(frequency * TWO_PI * pixelIndex + phaseOffset * TWO_PI) + 1.) / 2.,
 			vec2(0.),
 			1);
 	}
