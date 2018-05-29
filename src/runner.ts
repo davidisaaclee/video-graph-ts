@@ -17,7 +17,7 @@ let freq = 60.1;
 	.addEventListener("input", evt => {
 		if (evt.target != null) {
 			freq =
-				20000
+				200
 				* Math.pow(
 					parseFloat((evt.target as HTMLInputElement).value) / 100,
 					2);
