@@ -96,7 +96,7 @@ export function renderGraph(
 
 	for (const step of steps) {
 		const {
-			program, inletToUniformIdentifiers, uniforms: constantUniforms,
+			program, uniforms: constantUniforms,
 			timeUniformIdentifier
 		} = graph.nodes[step.nodeKey];
 		const attributes =
@@ -106,27 +106,17 @@ export function renderGraph(
 				program);
 
 		const edges = Array.from(edgesWithSource(step.nodeKey, graph));
-		const textureUniforms =
-			Object.keys(inletToUniformIdentifiers)
-			.map(inletKey => {
-				const matchingEdgeKeys =
-					edges.filter(e => graph.edges[e].metadata.inlet === inletKey);
-				const sourceNodeKey = matchingEdgeKeys.length === 0
-					? null
-					: graph.edges[matchingEdgeKeys[0]].dst;
-
-				return { inletKey, sourceNodeKey };
-			})
-			.map(({ inletKey, sourceNodeKey }) => {
-				if (sourceNodeKey == null) {
-					throw new Error(`No source node for inlet ${inletKey} of node ${step.nodeKey}`);
-				}
-
+		const textureUniforms = edges
+			.map(key => graph.edges[key])
+			.map(({ dst, metadata }) => {
 				return {
-					identifier: inletToUniformIdentifiers[inletKey],
-					value: { type: 'texture', data: textures[sourceNodeKey] } as UniformValue
+					identifier: metadata.inlet,
+					value: {
+						type: 'texture',
+						data: textures[dst]
+					}
 				};
-			});
+			})
 
 		if (textureUniforms.length > 0) {
 			textureUniforms.push({

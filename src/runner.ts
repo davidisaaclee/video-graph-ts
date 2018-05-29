@@ -15,9 +15,6 @@ const makeGraph: (gl: WebGLRenderingContext) => VideoGraph = (gl) => ({
 	nodes: {
 		'oscillator': {
 			program: createProgramWithFragmentShader(gl, fragmentShaderSource),
-			inletToUniformIdentifiers: {
-				'rotationTheta': 'rotationTheta'
-			},
 			// timeUniformIdentifier: 't',
 			uniforms: uniformDictFromArray(
 				[
@@ -30,9 +27,6 @@ const makeGraph: (gl: WebGLRenderingContext) => VideoGraph = (gl) => ({
 
 		'oscillator2': {
 			program: createProgramWithFragmentShader(gl, fragmentShaderSource),
-			inletToUniformIdentifiers: {
-				'rotationTheta': 'rotationTheta'
-			},
 			// timeUniformIdentifier: 't',
 			uniforms: uniformDictFromArray(
 				[
@@ -45,7 +39,6 @@ const makeGraph: (gl: WebGLRenderingContext) => VideoGraph = (gl) => ({
 
 		'constant': {
 			program: createProgramWithFragmentShader(gl, constantFragmentSource),
-			inletToUniformIdentifiers: {},
 			uniforms: uniformDictFromArray([
 				{
 					identifier: 'value',
@@ -55,7 +48,6 @@ const makeGraph: (gl: WebGLRenderingContext) => VideoGraph = (gl) => ({
 		},
 		'invert': {
 			program: createProgramWithFragmentShader(gl, invertShaderSource),
-			inletToUniformIdentifiers: { 'input': 'inputTexture' }
 		}
 	},
 	edges: {
@@ -63,12 +55,12 @@ const makeGraph: (gl: WebGLRenderingContext) => VideoGraph = (gl) => ({
 		'constant <- invert': {
 			src: 'invert',
 			dst: 'constant',
-			metadata: { inlet: 'input' }
+			metadata: { inlet: 'inputTexture' }
 		},
 		'osc <- invert': {
 			src: 'invert',
 			dst: 'oscillator',
-			metadata: { inlet: 'input' }
+			metadata: { inlet: 'inputTexture' }
 		}
 		*/
 		'osc.rotation <- constant': {

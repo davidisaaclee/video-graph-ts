@@ -11,7 +11,6 @@ import {
 
 export interface PluginNode {
 	program: WebGLProgram;
-	inletToUniformIdentifiers: { [inletKey: string]: string };
 	timeUniformIdentifier?: string;
 	uniforms?: { [identifier: string]: UniformSpecification };
 }
