@@ -1,11 +1,11 @@
 import { renderGraph, setup } from 'render';
-import { VideoGraph, createProgramWithFragmentShader } from 'model/VideoGraph';
-import vertexShaderSource from 'shaders/vertex';
+import { VideoGraph } from 'model/VideoGraph';
 import fragmentShaderSource from 'shaders/oscillator';
 import constantFragmentSource from 'shaders/constantColor';
 import invertShaderSource from 'shaders/invertRGB';
 import { UniformSpecification } from 'utility/glTypes';
 import { indexBy } from 'utility/indexBy';
+import { createProgramWithFragmentShader } from 'utility/glHelpers';
 
 function uniformDictFromArray(uniforms: UniformSpecification[]): { [iden: string]: UniformSpecification } {
 	return indexBy(s => s.identifier, uniforms);

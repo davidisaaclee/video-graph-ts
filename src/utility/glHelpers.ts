@@ -1,6 +1,7 @@
 import {
 	ShaderType, BufferHint, AttributeType, BufferData
 } from 'utility/glTypes';
+import planeVertexShader from 'shaders/vertex';
 
 export function createProgram(gl: WebGLRenderingContext, shaders: WebGLShader[]): WebGLProgram {
 	const program = gl.createProgram();
@@ -52,5 +53,25 @@ export function bindVertexAttribute(
 
 	gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
 	gl.vertexAttribPointer(location, 2, gl.FLOAT, normalize, 0, 0);
+}
+
+
+export function createProgramWithFragmentShader(
+	gl: WebGLRenderingContext,
+	fragmentShaderSource: string
+): WebGLProgram  {
+	const vertexShader =
+		createShader(
+			gl,
+			gl.VERTEX_SHADER,
+			planeVertexShader);
+
+	const fragmentShader =
+		createShader(
+			gl,
+			gl.FRAGMENT_SHADER,
+			fragmentShaderSource);
+
+	return createProgram(gl, [vertexShader, fragmentShader]);
 }
 
