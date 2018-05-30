@@ -1,7 +1,7 @@
 import {
 	ShaderType, BufferHint, AttributeType, BufferData
-} from 'utility/glTypes';
-import planeVertexShader from 'shaders/vertex';
+} from './glTypes';
+import planeVertexShader from '../shaders/vertex';
 
 export function createProgram(gl: WebGLRenderingContext, shaders: WebGLShader[]): WebGLProgram {
 	const program = gl.createProgram();

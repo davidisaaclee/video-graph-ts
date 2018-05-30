@@ -1,4 +1,4 @@
-import { glsl } from 'utility/glslTemplate';
+import { glsl } from '../utility/glslTemplate';
 
 export default glsl`
 	precision mediump float;

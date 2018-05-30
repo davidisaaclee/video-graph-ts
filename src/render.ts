@@ -1,15 +1,15 @@
 import {
 	AttributeType, BufferData,
 	UniformData, UniformSpecification, UniformValue
-} from 'utility/glTypes';
-import { createBuffer, bindVertexAttribute } from 'utility/glHelpers';
-import { resizeCanvas } from 'utility/resizeCanvas';
+} from './utility/glTypes';
+import { createBuffer, bindVertexAttribute } from './utility/glHelpers';
+import { resizeCanvas } from './utility/resizeCanvas';
 import {
 	Graph, resolveDependencies, edgesWithSource
-} from 'utility/Graph';
-import { indexBy } from 'utility/indexBy';
-import { mapValues } from 'utility/mapValues';
-import { VideoGraph } from 'model/VideoGraph';
+} from './utility/Graph';
+import { indexBy } from './utility/indexBy';
+import { mapValues } from './utility/mapValues';
+import { VideoGraph } from './model/VideoGraph';
 
 let pixelShaderProgramAttributes: AttributeSpecification[] | null = null;
 export function setup(gl: WebGLRenderingContext) {
@@ -60,7 +60,6 @@ export function renderGraph(
 	graph: VideoGraph,
 	runtimeUniforms: { [nodeKey: string]: { [iden: string]: UniformSpecification } },
 	outputNodeKey: string,
-	frameIndex: number,
 ) {
 	// Clear the canvas AND the depth buffer.
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);

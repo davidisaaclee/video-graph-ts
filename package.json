@@ -1,11 +1,16 @@
 {
-  "name": "analog-vs",
+  "name": "video-graph",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "lib/index.js",
+  "typings": "lib/index",
+  "typescript": {
+		"definition": "lib/index"
+	},
   "scripts": {
     "clean": "rimraf lib",
-    "build": "npm run clean && rollup --config",
+    "build:demo": "npm run clean && rollup --config",
+    "build": "npm run clean && tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

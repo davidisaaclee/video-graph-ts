@@ -1,4 +1,4 @@
-import { glsl } from 'utility/glslTemplate';
+import { glsl } from '../utility/glslTemplate';
 
 export default glsl`
 	attribute vec2 position;

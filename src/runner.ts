@@ -1,11 +1,11 @@
-import { renderGraph, setup } from 'render';
-import { VideoGraph } from 'model/VideoGraph';
-import fragmentShaderSource from 'shaders/oscillator';
-import constantFragmentSource from 'shaders/constantColor';
-import invertShaderSource from 'shaders/invertRGB';
-import { UniformSpecification } from 'utility/glTypes';
-import { indexBy } from 'utility/indexBy';
-import { createProgramWithFragmentShader } from 'utility/glHelpers';
+import { renderGraph, setup } from './render';
+import { VideoGraph } from './model/VideoGraph';
+import fragmentShaderSource from './shaders/oscillator';
+import constantFragmentSource from './shaders/constantColor';
+import invertShaderSource from './shaders/invertRGB';
+import { UniformSpecification } from './utility/glTypes';
+import { indexBy } from './utility/indexBy';
+import { createProgramWithFragmentShader } from './utility/glHelpers';
 
 function uniformDictFromArray(uniforms: UniformSpecification[]): { [iden: string]: UniformSpecification } {
 	return indexBy(s => s.identifier, uniforms);
@@ -166,7 +166,6 @@ function renderLoop() {
 		},
 		// "invert",
 		"oscillator2",
-		frameIndex
 	);
 	window.requestAnimationFrame(renderLoop);
 }

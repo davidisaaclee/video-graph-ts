@@ -1,6 +1,6 @@
-import { UniformSpecification } from 'utility/glTypes';
-import { createProgram, createShader } from 'utility/glHelpers';
-import { Graph } from 'utility/Graph';
+import { UniformSpecification } from '../utility/glTypes';
+import { createProgram, createShader } from '../utility/glHelpers';
+import { Graph } from '../utility/Graph';
 
 export interface PluginNode {
 	program: WebGLProgram;
