@@ -5,8 +5,8 @@
   "main": "lib/index.js",
   "typings": "lib/index",
   "typescript": {
-		"definition": "lib/index"
-	},
+    "definition": "lib/index"
+  },
   "scripts": {
     "clean": "rimraf lib",
     "build:demo": "npm run clean && rollup --config",
@@ -26,6 +26,7 @@
     "typescript": "^2.8.3"
   },
   "dependencies": {
+    "@davidisaaclee/graph": "/Users/david/Documents/Drawer/packages/graph-js",
     "gl-matrix": "^2.6.1"
   }
 }

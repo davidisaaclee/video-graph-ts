@@ -6,7 +6,7 @@ import { createBuffer, bindVertexAttribute } from './utility/glHelpers';
 import { resizeCanvas } from './utility/resizeCanvas';
 import {
 	Graph, resolveDependencies, edgesWithSource
-} from './utility/Graph';
+} from '@davidisaaclee/graph';
 import { indexBy } from './utility/indexBy';
 import { mapValues } from './utility/mapValues';
 import { VideoGraph } from './model/VideoGraph';
@@ -103,9 +103,9 @@ export function renderGraph(
 				pixelShaderProgramAttributes == null ? [] : pixelShaderProgramAttributes,
 				program);
 
-		const edges = Array.from(edgesWithSource(step.nodeKey, graph));
-		const textureUniforms = edges
-			.map(key => graph.edges[key])
+		const edges = edgesWithSource(step.nodeKey, graph);
+		const textureUniforms = Object.keys(edges)
+			.map(key => edges[key])
 			.map(({ dst, metadata }) => {
 				return {
 					identifier: metadata.uniformIdentifier,
