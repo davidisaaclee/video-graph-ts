@@ -51,32 +51,35 @@ export function setup(gl: WebGLRenderingContext) {
 	] as AttributeSpecification[];
 }
 
-// TODO: Keep texture cache local to render call
-let textures: { [iden: string]: WebGLTexture } = {};
-let framebuffers: { [iden: string]: WebGLFramebuffer | null } = {};
+export type RenderCache = {
+	textures: { [iden: string]: WebGLTexture },
+	framebuffers: { [iden: string]: WebGLFramebuffer | null },
+};
 
 export function renderGraph(
 	gl: WebGLRenderingContext,
 	graph: VideoGraph,
 	runtimeUniforms: { [nodeKey: string]: { [iden: string]: UniformSpecification } },
 	outputNodeKey: string,
+	// mutated in-place
+	cache: RenderCache,
 ) {
 	// Clear the canvas AND the depth buffer.
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
 	// NOTE: this iterates through nodes that we don't need to make textures for
-	textures = Object.keys(graph.nodes)
-		.map(key => ({ [key]: textures[key] || createAndSetupTexture(gl) }))
+	cache.textures = Object.keys(graph.nodes)
+		.map(key => ({ [key]: cache.textures[key] || createAndSetupTexture(gl) }))
 		.reduce((acc, elm) => Object.assign(acc, elm), {});
 
-	framebuffers = Object.keys(textures)
+	cache.framebuffers = Object.keys(cache.textures)
 		.map(key => {
 			if (key === outputNodeKey) {
 				return { [key]: null };
 			}
 
-			if (framebuffers[key] != null) {
-				return { [key]: framebuffers[key] };
+			if (cache.framebuffers[key] != null) {
+				return { [key]: cache.framebuffers[key] };
 			}
 
 			const framebuffer = gl.createFramebuffer();
@@ -85,7 +88,7 @@ export function renderGraph(
 				gl.FRAMEBUFFER,
 				gl.COLOR_ATTACHMENT0,
 				gl.TEXTURE_2D,
-				textures[key],
+				cache.textures[key],
 				0);
 
 			return { [key]: framebuffer };
@@ -111,7 +114,7 @@ export function renderGraph(
 					identifier: metadata.uniformIdentifier,
 					value: {
 						type: 'texture',
-						data: textures[dst]
+						data: cache.textures[dst]
 					}
 				};
 			})
@@ -137,7 +140,7 @@ export function renderGraph(
 			program,
 			pixelShaderProgramAttributes == null ? [] : pixelShaderProgramAttributes,
 			uniformsWithoutRuntimeUniforms,
-			framebuffers[step.nodeKey]
+			cache.framebuffers[step.nodeKey]
 		);
 	}
 

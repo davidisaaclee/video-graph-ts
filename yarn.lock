@@ -2,6 +2,9 @@
 # yarn lockfile v1
 
 
+"@davidisaaclee/graph@/Users/david/Documents/Drawer/packages/graph-js":
+  version "0.1.0"
+
 "@davidisaaclee/graph@file:../graph-js":
   version "0.1.0"
 

@@ -1,4 +1,4 @@
-import { renderGraph, setup } from './render';
+import { renderGraph, setup, RenderCache } from './render';
 import { VideoGraph } from './model/VideoGraph';
 import fragmentShaderSource from './shaders/oscillator';
 import constantFragmentSource from './shaders/constantColor';
@@ -120,6 +120,7 @@ setup(gl);
 
 const fps = 60;
 const start = Date.now();
+const cache: RenderCache = { textures: {}, framebuffers: {} };
 function renderLoop() {
 	// render(gl as WebGLRenderingContext, (Date.now() - start) / 1000);
 	if (gl == null) {
@@ -166,6 +167,7 @@ function renderLoop() {
 		},
 		// "invert",
 		"oscillator2",
+		cache
 	);
 	window.requestAnimationFrame(renderLoop);
 }
