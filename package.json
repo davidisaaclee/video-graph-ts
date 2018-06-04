@@ -1,5 +1,5 @@
 {
-  "name": "video-graph",
+  "name": "@davidisaaclee/video-graph",
   "version": "1.0.0",
   "description": "",
   "main": "lib/index.js",
