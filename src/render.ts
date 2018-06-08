@@ -5,7 +5,8 @@ import {
 import { createBuffer, bindVertexAttribute } from './utility/glHelpers';
 import { resizeCanvas } from './utility/resizeCanvas';
 import {
-	Graph, resolveDependencies, edgesWithSource
+	Graph, resolveDependencies, edgesWithSource,
+	allNodes, nodeForKey,
 } from '@davidisaaclee/graph';
 import { indexBy } from './utility/indexBy';
 import { mapValues } from './utility/mapValues';
@@ -68,7 +69,8 @@ export function renderGraph(
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
 	// NOTE: this iterates through nodes that we don't need to make textures for
-	cache.textures = Object.keys(graph.nodes)
+	const allVideoNodes = allNodes(graph);
+	cache.textures = Object.keys(allVideoNodes)
 		.map(key => ({ [key]: cache.textures[key] || createAndSetupTexture(gl) }))
 		.reduce((acc, elm) => Object.assign(acc, elm), {});
 
@@ -99,7 +101,7 @@ export function renderGraph(
 	for (const step of steps) {
 		const {
 			program, uniforms: constantUniforms,
-		} = graph.nodes[step.nodeKey];
+		} = nodeForKey(graph, step.nodeKey)!;
 		const attributes =
 			buildAttributesDictionary(
 				gl,
