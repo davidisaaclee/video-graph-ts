@@ -1,7 +1,7 @@
 {
   "name": "@davidisaaclee/video-graph",
   "version": "0.1.0",
-  "description": "",
+  "description": "Models and renders a graph of WebGL fragment shaders",
   "main": "lib/index.js",
   "typings": "lib/index",
   "typescript": {
