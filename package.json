@@ -21,7 +21,7 @@
     "typescript": "^2.8.3"
   },
   "dependencies": {
-    "@davidisaaclee/graph": "/Users/david/Documents/Drawer/packages/graph-js",
+    "@davidisaaclee/graph": "^0.1.0",
     "gl-matrix": "^2.6.1"
   }
 }
