@@ -62,26 +62,36 @@ export function renderGraph(
 	graph: VideoGraph,
 	runtimeUniforms: { [nodeKey: string]: { [iden: string]: UniformSpecification } },
 	outputNodeKey: string,
+	readCache: RenderCache,
 	// mutated in-place
-	cache: RenderCache,
+	writeCache: RenderCache,
 ) {
 	// Clear the canvas AND the depth buffer.
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-	// NOTE: this iterates through nodes that we don't need to make textures for
 	const allVideoNodes = allNodes(graph);
-	cache.textures = Object.keys(allVideoNodes)
-		.map(key => ({ [key]: cache.textures[key] || createAndSetupTexture(gl) }))
+
+	// Create empty textures for nodes that don't have textures yet.
+	// NOTE: this iterates through nodes that we don't need to make textures for
+	readCache.textures = Object.keys(allVideoNodes)
+		.map(nodeKey => ({ [nodeKey]: readCache.textures[nodeKey] || createAndSetupTexture(gl) }))
+		.reduce((acc, elm) => Object.assign(acc, elm), {});
+	writeCache.textures = Object.keys(allVideoNodes)
+		.map(nodeKey => ({ [nodeKey]: writeCache.textures[nodeKey] || createAndSetupTexture(gl) }))
 		.reduce((acc, elm) => Object.assign(acc, elm), {});
 
-	cache.framebuffers = Object.keys(cache.textures)
-		.map(key => {
-			if (key === outputNodeKey) {
-				return { [key]: null };
+	// Create framebuffers targeting each texture in the write cache.
+	writeCache.framebuffers = Object.keys(writeCache.textures)
+		.map(nodeKey => {
+			// For the output node, don't use a framebuffer; just draw directly to canvas.
+			// (Encode this as a null framebuffer.)
+			if (nodeKey === outputNodeKey) {
+				return { [nodeKey]: null };
 			}
 
-			if (cache.framebuffers[key] != null) {
-				return { [key]: cache.framebuffers[key] };
+			// If there's already a framebuffer, don't make a new one.
+			if (writeCache.framebuffers[nodeKey] != null) {
+				return { [nodeKey]: writeCache.framebuffers[nodeKey] };
 			}
 
 			const framebuffer = gl.createFramebuffer();
@@ -90,10 +100,10 @@ export function renderGraph(
 				gl.FRAMEBUFFER,
 				gl.COLOR_ATTACHMENT0,
 				gl.TEXTURE_2D,
-				cache.textures[key],
+				writeCache.textures[nodeKey],
 				0);
 
-			return { [key]: framebuffer };
+			return { [nodeKey]: framebuffer };
 		})
 		.reduce((acc, elm) => Object.assign(acc, elm), {});
 	const steps = resolveDependencies(graph, outputNodeKey);
@@ -102,6 +112,7 @@ export function renderGraph(
 		const {
 			program, uniforms: constantUniforms,
 		} = nodeForKey(graph, step.nodeKey)!;
+
 		const attributes =
 			buildAttributesDictionary(
 				gl,
@@ -116,19 +127,21 @@ export function renderGraph(
 					identifier: metadata.uniformIdentifier,
 					value: {
 						type: 'texture',
-						data: cache.textures[dst]
+						data: readCache.textures[dst]
 					}
 				};
 			})
 
 		if (textureUniforms.length > 0) {
+			// TODO: Allow shaders to specify custom uniform for specifying dimensions of input texture.
+			// also to specify actual dimensions of textures
 			textureUniforms.push({
 				identifier: 'inputTextureDimensions',
 				value: { type: '2f', data: [gl.canvas.width, gl.canvas.height] }
 			});
 		}
 
-		const uniformsWithoutRuntimeUniforms = Object.assign(
+		const uniforms = Object.assign(
 			{},
 			constantUniforms == null ? {} : constantUniforms,
 			indexBy(s => s.identifier, textureUniforms),
@@ -141,8 +154,8 @@ export function renderGraph(
 			gl,
 			program,
 			pixelShaderProgramAttributes == null ? [] : pixelShaderProgramAttributes,
-			uniformsWithoutRuntimeUniforms,
-			cache.framebuffers[step.nodeKey]
+			uniforms,
+			writeCache.framebuffers[step.nodeKey]
 		);
 	}
 
