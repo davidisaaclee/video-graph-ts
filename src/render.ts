@@ -64,7 +64,7 @@ export function renderGraph(
 	outputNodeKey: string,
 	readCache: RenderCache,
 	// mutated in-place
-	writeCache: RenderCache,
+	writeCache: RenderCache = readCache,
 ) {
 	// Clear the canvas AND the depth buffer.
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
