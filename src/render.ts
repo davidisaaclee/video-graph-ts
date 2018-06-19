@@ -77,20 +77,7 @@ export function renderGraph(
 		.map(nodeKey => ({ [nodeKey]: readCache.textures[nodeKey] || createAndSetupTexture(gl) }))
 		.reduce((acc, elm) => Object.assign(acc, elm), {});
 	writeCache.textures = Object.keys(allVideoNodes)
-		.map(nodeKey => {
-			const existingTexture = writeCache.textures[nodeKey];
-			if (existingTexture != null) {
-				// Use the existing texture;
-				// but update the dimensions to account for window change.
-				gl.bindTexture(gl.TEXTURE_2D, existingTexture);
-				gl.texImage2D(
-					gl.TEXTURE_2D, 0, gl.RGBA, gl.canvas.width, gl.canvas.height, 0,
-					gl.RGBA, gl.UNSIGNED_BYTE, null);
-				return { [nodeKey]: existingTexture };
-			} else {
-				return { [nodeKey]: createAndSetupTexture(gl) };
-			}
-		})
+		.map(nodeKey => ({ [nodeKey]: writeCache.textures[nodeKey] || createAndSetupTexture(gl) }))
 		.reduce((acc, elm) => Object.assign(acc, elm), {});
 
 	// Create framebuffers targeting each texture in the write cache.
