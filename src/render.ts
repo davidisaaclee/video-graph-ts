@@ -272,7 +272,7 @@ function buildUniformsDictionary(
 		spec => {
 			const location = gl.getUniformLocation(program, spec.identifier);
 			if (location == null) {
-				throw new Error("Invalid uniform");
+				throw new Error(`Could not find location for uniform ${spec.identifier}`);
 			}
 
 			return {
@@ -280,24 +280,6 @@ function buildUniformsDictionary(
 				value: spec.value
 			};
 		});
-
-	/*
-	return uniformSpecifications
-		.map(spec => {
-			const location = gl.getUniformLocation(program, spec.identifier);
-			if (location == null) {
-				throw new Error("Invalid uniform");
-			}
-
-			return {
-				[spec.identifier]: {
-					location,
-					value: spec.value
-				}
-			};
-		})
-		.reduce((acc, elm) => Object.assign(acc, elm), {});
-		*/
 }
 
 
