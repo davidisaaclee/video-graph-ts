@@ -94,14 +94,7 @@ export function renderGraph(
 				return { [nodeKey]: writeCache.framebuffers[nodeKey] };
 			}
 
-			const framebuffer = gl.createFramebuffer();
-			gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
-			gl.framebufferTexture2D(
-				gl.FRAMEBUFFER,
-				gl.COLOR_ATTACHMENT0,
-				gl.TEXTURE_2D,
-				writeCache.textures[nodeKey],
-				0);
+			const framebuffer = createAndSetupFramebuffer(gl, writeCache.textures[nodeKey]);
 
 			return { [nodeKey]: framebuffer };
 		})
@@ -229,6 +222,23 @@ function createAndSetupTexture(gl: WebGLRenderingContext): WebGLTexture {
 	}
 
 	return texture;
+}
+
+function createAndSetupFramebuffer(gl: WebGLRenderingContext, texture: WebGLTexture): WebGLFramebuffer {
+	const framebuffer = gl.createFramebuffer();
+	gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+	gl.framebufferTexture2D(
+		gl.FRAMEBUFFER,
+		gl.COLOR_ATTACHMENT0,
+		gl.TEXTURE_2D,
+		texture,
+		0);
+
+	if (framebuffer == null) {
+		throw new Error("Failed to create framebuffer");
+	}
+
+	return framebuffer;
 }
 
 interface AttributeData {
