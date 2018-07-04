@@ -144,6 +144,11 @@ export function renderGraph(
 		.reduce((acc, elm) => Object.assign(acc, elm), {});
 	const steps = resolveDependencies(graph, outputNodeKey);
 
+	// Stores the most up-to-date textures to read from during this render pass. 
+	// As textures are rendered, they are put in this structure to be referenced by
+	// render steps further down the pipeline.
+	const textureCache = { ...readCache.textures };
+
 	for (const step of steps) {
 		const {
 			program, uniforms: constantUniforms,
@@ -163,7 +168,7 @@ export function renderGraph(
 					identifier: metadata.uniformIdentifier,
 					value: {
 						type: 'texture',
-						data: readCache.textures[dst]
+						data: textureCache[dst]
 					}
 				};
 			})
@@ -193,6 +198,9 @@ export function renderGraph(
 			uniforms,
 			writeCache.framebuffers[step.nodeKey]
 		);
+
+		// During this render pass, we want to read from this most up-to-date texture.
+		textureCache[step.nodeKey] = writeCache.textures[step.nodeKey];
 	}
 
 	
