@@ -12,9 +12,46 @@ import { indexBy } from './utility/indexBy';
 import { mapValues } from './utility/mapValues';
 import { VideoGraph } from './model/VideoGraph';
 
+const k = {
+	texturePrecision: null as number | null,
+	filteringMode: null as number | null,
+};
+
 let pixelShaderProgramAttributes: AttributeSpecification[] | null = null;
 export function setup(gl: WebGLRenderingContext) {
 	resizeCanvas(gl.canvas);
+
+
+	// Determine which precision and filtering modes are supported.
+	
+	k.texturePrecision = gl.UNSIGNED_BYTE;
+	k.filteringMode = gl.NEAREST;
+
+	const floatExt = gl.getExtension('OES_texture_float');
+	// This extension is present if device can render to a floating point texture.
+	// (e.g. iOS does not have this extension.)
+	const renderFloatExt = gl.getExtension('WEBGL_color_buffer_float');
+
+	if (floatExt != null && renderFloatExt != null) {
+		const linearFloatExt = gl.getExtension('OES_texture_float_linear');
+
+		k.texturePrecision = gl.FLOAT;
+		// TODO: Is linear filtering even desirable?
+		if (linearFloatExt != null) {
+			k.filteringMode = gl.LINEAR;
+		}
+	} else {
+		const halfFloatExt = gl.getExtension('OES_texture_half_float');
+
+		if (halfFloatExt != null) {
+			k.texturePrecision = halfFloatExt.HALF_FLOAT_OES;
+			const linearHalfFloatExt = gl.getExtension('OES_texture_half_float_linear');
+			if (linearHalfFloatExt != null) {
+				k.filteringMode = gl.LINEAR;
+			}
+		}
+	}
+
 
 	gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
@@ -74,10 +111,16 @@ export function renderGraph(
 	// Create empty textures for nodes that don't have textures yet.
 	// NOTE: this iterates through nodes that we don't need to make textures for
 	readCache.textures = Object.keys(allVideoNodes)
-		.map(nodeKey => ({ [nodeKey]: readCache.textures[nodeKey] || createAndSetupTexture(gl) }))
+		.map(nodeKey => ({
+			[nodeKey]: (readCache.textures[nodeKey]
+				|| createAndSetupTexture(gl))
+		}))
 		.reduce((acc, elm) => Object.assign(acc, elm), {});
 	writeCache.textures = Object.keys(allVideoNodes)
-		.map(nodeKey => ({ [nodeKey]: writeCache.textures[nodeKey] || createAndSetupTexture(gl) }))
+		.map(nodeKey => ({
+			[nodeKey]: (writeCache.textures[nodeKey] 
+				|| createAndSetupTexture(gl))
+		}))
 		.reduce((acc, elm) => Object.assign(acc, elm), {});
 
 	// Create framebuffers targeting each texture in the write cache.
@@ -203,6 +246,10 @@ export function renderGraph(
 
 
 function createAndSetupTexture(gl: WebGLRenderingContext): WebGLTexture {
+	if (k.filteringMode == null || k.texturePrecision == null) {
+		throw new Error("Did not resolve filter mode or texture precision.");
+	}
+
 	const texture = gl.createTexture();
 	gl.bindTexture(gl.TEXTURE_2D, texture);
 
@@ -210,12 +257,12 @@ function createAndSetupTexture(gl: WebGLRenderingContext): WebGLTexture {
 	// working with pixels.
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, k.filteringMode);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, k.filteringMode);
 
 	gl.texImage2D(
 		gl.TEXTURE_2D, 0, gl.RGBA, gl.canvas.width, gl.canvas.height, 0,
-		gl.RGBA, gl.UNSIGNED_BYTE, null);
+		gl.RGBA, k.texturePrecision, null);
 
 	if (texture == null) {
 		throw new Error("Failed to create texture");
