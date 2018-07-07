@@ -151,7 +151,7 @@ export function renderGraph(
 
 	for (const step of steps) {
 		const {
-			program, uniforms: constantUniforms,
+			program, uniforms: constantUniforms, uniformLocations
 		} = nodeForKey(graph, step.nodeKey)!;
 
 		const attributes =
@@ -196,6 +196,7 @@ export function renderGraph(
 			program,
 			pixelShaderProgramAttributes == null ? [] : pixelShaderProgramAttributes,
 			uniforms,
+			uniformLocations == null ? {} : uniformLocations,
 			writeCache.framebuffers[step.nodeKey]
 		);
 
@@ -219,6 +220,7 @@ export function renderGraph(
 		program: WebGLProgram,
 		attributes: Array<AttributeSpecification>,
 		uniforms: { [iden: string]: UniformSpecification },
+		cachedUniformLocations: { [iden: string]: WebGLUniformLocation },
 		outputFramebuffer: WebGLFramebuffer | null
 	) {
 		return drawWith(
@@ -230,6 +232,7 @@ export function renderGraph(
 			buildUniformsDictionary(
 				gl,
 				uniforms,
+				cachedUniformLocations,
 				program),
 			outputFramebuffer);
 	}
@@ -330,12 +333,16 @@ function buildAttributesDictionary(
 function buildUniformsDictionary(
 	gl: WebGLRenderingContext,
 	uniformSpecifications: { [iden: string]: UniformSpecification },
+	cachedUniformLocations: { [iden: string]: WebGLUniformLocation },
 	program: WebGLProgram
 ): { [iden: string]: UniformData } {
 	return mapValues(
 		uniformSpecifications,
 		spec => {
-			const location = gl.getUniformLocation(program, spec.identifier);
+			const location = cachedUniformLocations[spec.identifier] != null
+				? cachedUniformLocations[spec.identifier]
+				: gl.getUniformLocation(program, spec.identifier);
+
 			if (location == null) {
 				throw new Error(`Could not find location for uniform ${spec.identifier}`);
 			}

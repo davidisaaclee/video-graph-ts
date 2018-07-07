@@ -5,6 +5,7 @@ import { Graph } from '@davidisaaclee/graph';
 export interface PluginNode {
 	program: WebGLProgram;
 	uniforms?: { [identifier: string]: UniformSpecification };
+	uniformLocations?: { [identifier: string]: WebGLUniformLocation };
 }
 
 export interface PluginConnection {
