@@ -18,9 +18,8 @@ const k = {
 };
 
 let pixelShaderProgramAttributes: AttributeSpecification[] | null = null;
-export function setup(gl: WebGLRenderingContext) {
-	resizeCanvas(gl.canvas);
-
+export function setup(gl: WebGLRenderingContext, realToCSSPixelRatio: number = window.devicePixelRatio) {
+	resizeCanvas(gl.canvas, realToCSSPixelRatio);
 
 	// Determine which precision and filtering modes are supported.
 	
