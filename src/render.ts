@@ -17,9 +17,18 @@ const k = {
 	filteringMode: null as number | null,
 };
 
+// We only need to use a single framebuffer.
+// It'd be nice to give control of this to the user, but for now, keep it internal.
+let sharedFramebuffer: WebGLFramebuffer | null = null;
+
 let pixelShaderProgramAttributes: AttributeSpecification[] | null = null;
 export function setup(gl: WebGLRenderingContext, realToCSSPixelRatio: number = window.devicePixelRatio) {
 	resizeCanvas(gl.canvas, realToCSSPixelRatio);
+
+	sharedFramebuffer = gl.createFramebuffer();
+	if (sharedFramebuffer == null) {
+		throw new Error('Could not create framebuffer');
+	}
 
 	// Determine which precision and filtering modes are supported.
 	
@@ -90,7 +99,6 @@ export function setup(gl: WebGLRenderingContext, realToCSSPixelRatio: number = w
 
 export type RenderCache = {
 	textures: { [iden: string]: WebGLTexture },
-	framebuffers: { [iden: string]: WebGLFramebuffer | null },
 };
 
 export function renderGraph(
@@ -122,25 +130,6 @@ export function renderGraph(
 		}))
 		.reduce((acc, elm) => Object.assign(acc, elm), {});
 
-	// Create framebuffers targeting each texture in the write cache.
-	writeCache.framebuffers = Object.keys(writeCache.textures)
-		.map(nodeKey => {
-			// For the output node, don't use a framebuffer; just draw directly to canvas.
-			// (Encode this as a null framebuffer.)
-			if (nodeKey === outputNodeKey) {
-				return { [nodeKey]: null };
-			}
-
-			// If there's already a framebuffer, don't make a new one.
-			if (writeCache.framebuffers[nodeKey] != null) {
-				return { [nodeKey]: writeCache.framebuffers[nodeKey] };
-			}
-
-			const framebuffer = createAndSetupFramebuffer(gl, writeCache.textures[nodeKey]);
-
-			return { [nodeKey]: framebuffer };
-		})
-		.reduce((acc, elm) => Object.assign(acc, elm), {});
 	const steps = resolveDependencies(graph, outputNodeKey);
 
 	// Stores the most up-to-date textures to read from during this render pass. 
@@ -190,14 +179,17 @@ export function renderGraph(
 				: runtimeUniforms[step.nodeKey]
 		);
 
+		const framebuffer = step.nodeKey === outputNodeKey 
+			? null
+			: attachTextureToFBO(gl, writeCache.textures[step.nodeKey], sharedFramebuffer!);
+
 		drawWithSpecs(
 			gl,
 			program,
 			pixelShaderProgramAttributes == null ? [] : pixelShaderProgramAttributes,
 			uniforms,
 			uniformLocations == null ? {} : uniformLocations,
-			writeCache.framebuffers[step.nodeKey]
-		);
+			framebuffer);
 
 		// During this render pass, we want to read from this most up-to-date texture.
 		textureCache[step.nodeKey] = writeCache.textures[step.nodeKey];
@@ -295,6 +287,17 @@ function createAndSetupFramebuffer(gl: WebGLRenderingContext, texture: WebGLText
 		throw new Error("Failed to create framebuffer");
 	}
 
+	return framebuffer;
+}
+
+function attachTextureToFBO(gl: WebGLRenderingContext, texture: WebGLTexture, framebuffer: WebGLFramebuffer): WebGLFramebuffer {
+	gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+	gl.framebufferTexture2D(
+		gl.FRAMEBUFFER,
+		gl.COLOR_ATTACHMENT0,
+		gl.TEXTURE_2D,
+		texture,
+		0);
 	return framebuffer;
 }
 
