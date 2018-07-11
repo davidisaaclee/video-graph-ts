@@ -12,11 +12,6 @@ import { indexBy } from './utility/indexBy';
 import { mapValues } from './utility/mapValues';
 import { VideoGraph } from './model/VideoGraph';
 
-const k = {
-	texturePrecision: null as number | null,
-	filteringMode: null as number | null,
-};
-
 // We only need to use a single framebuffer.
 // It'd be nice to give control of this to the user, but for now, keep it internal.
 let sharedFramebuffer: WebGLFramebuffer | null = null;
@@ -29,37 +24,6 @@ export function setup(gl: WebGLRenderingContext, realToCSSPixelRatio: number = w
 	if (sharedFramebuffer == null) {
 		throw new Error('Could not create framebuffer');
 	}
-
-	// Determine which precision and filtering modes are supported.
-	
-	k.texturePrecision = gl.UNSIGNED_BYTE;
-	k.filteringMode = gl.NEAREST;
-
-	const floatExt = gl.getExtension('OES_texture_float');
-	// This extension is present if device can render to a floating point texture.
-	// (e.g. iOS does not have this extension.)
-	const renderFloatExt = gl.getExtension('WEBGL_color_buffer_float');
-
-	if (floatExt != null && renderFloatExt != null) {
-		const linearFloatExt = gl.getExtension('OES_texture_float_linear');
-
-		k.texturePrecision = gl.FLOAT;
-		// TODO: Is linear filtering even desirable?
-		if (linearFloatExt != null) {
-			k.filteringMode = gl.LINEAR;
-		}
-	} else {
-		const halfFloatExt = gl.getExtension('OES_texture_half_float');
-
-		if (halfFloatExt != null) {
-			k.texturePrecision = halfFloatExt.HALF_FLOAT_OES;
-			const linearHalfFloatExt = gl.getExtension('OES_texture_half_float_linear');
-			if (linearHalfFloatExt != null) {
-				k.filteringMode = gl.LINEAR;
-			}
-		}
-	}
-
 
 	gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
@@ -97,9 +61,7 @@ export function setup(gl: WebGLRenderingContext, realToCSSPixelRatio: number = w
 	] as AttributeSpecification[];
 }
 
-export type RenderCache = {
-	textures: { [iden: string]: WebGLTexture },
-};
+export type RenderCache = (iden: string) => WebGLTexture;
 
 export function renderGraph(
 	gl: WebGLRenderingContext,
@@ -115,27 +77,16 @@ export function renderGraph(
 
 	const allVideoNodes = allNodes(graph);
 
-	// Create empty textures for nodes that don't have textures yet.
-	// NOTE: this iterates through nodes that we don't need to make textures for
-	readCache.textures = Object.keys(allVideoNodes)
-		.map(nodeKey => ({
-			[nodeKey]: (readCache.textures[nodeKey]
-				|| createAndSetupTexture(gl))
-		}))
-		.reduce((acc, elm) => Object.assign(acc, elm), {});
-	writeCache.textures = Object.keys(allVideoNodes)
-		.map(nodeKey => ({
-			[nodeKey]: (writeCache.textures[nodeKey] 
-				|| createAndSetupTexture(gl))
-		}))
-		.reduce((acc, elm) => Object.assign(acc, elm), {});
-
 	const steps = resolveDependencies(graph, outputNodeKey);
 
+	// set of visited node keys
+	const visited: Record<string, boolean> = {};
 	// Stores the most up-to-date textures to read from during this render pass. 
 	// As textures are rendered, they are put in this structure to be referenced by
 	// render steps further down the pipeline.
-	const textureCache = { ...readCache.textures };
+	const textureCache = (nodeKey: string) => visited[nodeKey] != null
+		? writeCache(nodeKey)
+		: readCache(nodeKey);
 
 	for (const step of steps) {
 		const {
@@ -156,7 +107,7 @@ export function renderGraph(
 					identifier: metadata.uniformIdentifier,
 					value: {
 						type: 'texture',
-						data: textureCache[dst]
+						data: textureCache(dst)
 					}
 				};
 			})
@@ -181,7 +132,7 @@ export function renderGraph(
 
 		const framebuffer = step.nodeKey === outputNodeKey 
 			? null
-			: attachTextureToFBO(gl, writeCache.textures[step.nodeKey], sharedFramebuffer!);
+			: attachTextureToFBO(gl, writeCache(step.nodeKey), sharedFramebuffer!);
 
 		drawWithSpecs(
 			gl,
@@ -192,7 +143,8 @@ export function renderGraph(
 			framebuffer);
 
 		// During this render pass, we want to read from this most up-to-date texture.
-		textureCache[step.nodeKey] = writeCache.textures[step.nodeKey];
+		// To update `textureCache`, update the visited set.
+		visited[step.nodeKey] = true;
 	}
 
 	
@@ -245,50 +197,6 @@ export function renderGraph(
 
 }
 
-
-
-function createAndSetupTexture(gl: WebGLRenderingContext): WebGLTexture {
-	if (k.filteringMode == null || k.texturePrecision == null) {
-		throw new Error("Did not resolve filter mode or texture precision.");
-	}
-
-	const texture = gl.createTexture();
-	gl.bindTexture(gl.TEXTURE_2D, texture);
-
-	// Set up texture so we can render any size image and so we are
-	// working with pixels.
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, k.filteringMode);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, k.filteringMode);
-
-	gl.texImage2D(
-		gl.TEXTURE_2D, 0, gl.RGBA, gl.canvas.width, gl.canvas.height, 0,
-		gl.RGBA, k.texturePrecision, null);
-
-	if (texture == null) {
-		throw new Error("Failed to create texture");
-	}
-
-	return texture;
-}
-
-function createAndSetupFramebuffer(gl: WebGLRenderingContext, texture: WebGLTexture): WebGLFramebuffer {
-	const framebuffer = gl.createFramebuffer();
-	gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
-	gl.framebufferTexture2D(
-		gl.FRAMEBUFFER,
-		gl.COLOR_ATTACHMENT0,
-		gl.TEXTURE_2D,
-		texture,
-		0);
-
-	if (framebuffer == null) {
-		throw new Error("Failed to create framebuffer");
-	}
-
-	return framebuffer;
-}
 
 function attachTextureToFBO(gl: WebGLRenderingContext, texture: WebGLTexture, framebuffer: WebGLFramebuffer): WebGLFramebuffer {
 	gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
