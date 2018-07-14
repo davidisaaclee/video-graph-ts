@@ -6,6 +6,7 @@ export interface PluginNode {
 	program: WebGLProgram;
 	uniforms?: { [identifier: string]: UniformSpecification };
 	uniformLocations?: { [identifier: string]: WebGLUniformLocation };
+	attributeLocations?: { [identifier: string]: number };
 }
 
 export interface PluginConnection {

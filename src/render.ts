@@ -90,14 +90,16 @@ export function renderGraph(
 
 	for (const step of steps) {
 		const {
-			program, uniforms: constantUniforms, uniformLocations
+			program, uniforms: constantUniforms,
+			uniformLocations, attributeLocations,
 		} = nodeForKey(graph, step.nodeKey)!;
 
 		const attributes =
 			buildAttributesDictionary(
 				gl,
 				pixelShaderProgramAttributes == null ? [] : pixelShaderProgramAttributes,
-				program);
+				program,
+				attributeLocations == null ? {} : attributeLocations);
 
 		const edges = edgesWithSource(step.nodeKey, graph);
 		const textureUniforms = Object.keys(edges)
@@ -140,6 +142,7 @@ export function renderGraph(
 			pixelShaderProgramAttributes == null ? [] : pixelShaderProgramAttributes,
 			uniforms,
 			uniformLocations == null ? {} : uniformLocations,
+			attributeLocations == null ? {} : attributeLocations,
 			framebuffer);
 
 		// During this render pass, we want to read from this most up-to-date texture.
@@ -164,6 +167,7 @@ export function renderGraph(
 		attributes: Array<AttributeSpecification>,
 		uniforms: { [iden: string]: UniformSpecification },
 		cachedUniformLocations: { [iden: string]: WebGLUniformLocation },
+		cachedAttributeLocations: { [iden: string]: number },
 		outputFramebuffer: WebGLFramebuffer | null
 	) {
 		return drawWith(
@@ -171,7 +175,8 @@ export function renderGraph(
 			buildAttributesDictionary(
 				gl,
 				attributes,
-				program),
+				program,
+				cachedAttributeLocations),
 			buildUniformsDictionary(
 				gl,
 				uniforms,
@@ -227,16 +232,23 @@ interface AttributeSpecification {
 function buildAttributesDictionary(
 	gl: WebGLRenderingContext,
 	attributeSpecifications: AttributeSpecification[],
-	program: WebGLProgram
+	program: WebGLProgram,
+	cachedAttributeLocations: { [iden: string]: number },
 ): AttributeDictionary {
 	return attributeSpecifications
-		.map(({ identifier, buffer, type }) => ({
-			[identifier]: {
-				location: gl.getAttribLocation(program, identifier),
-				buffer,
-				type: type as AttributeType
-			}
-		}))
+		.map(({ identifier, buffer, type }) => {
+			const location = cachedAttributeLocations[identifier] != null
+				? cachedAttributeLocations[identifier]
+				: gl.getAttribLocation(program, identifier);
+
+			return {
+				[identifier]: {
+					location,
+					buffer,
+					type: type as AttributeType
+				}
+			};
+		})
 		.reduce((acc, elm) => Object.assign(acc, elm), {});
 }
 
