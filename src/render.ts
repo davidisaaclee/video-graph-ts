@@ -114,15 +114,6 @@ export function renderGraph(
 				};
 			})
 
-		if (textureUniforms.length > 0) {
-			// TODO: Allow shaders to specify custom uniform for specifying dimensions of input texture.
-			// also to specify actual dimensions of textures
-			textureUniforms.push({
-				identifier: 'inputTextureDimensions',
-				value: { type: '2f', data: [gl.canvas.width, gl.canvas.height] }
-			});
-		}
-
 		const uniforms = Object.assign(
 			{},
 			constantUniforms == null ? {} : constantUniforms,
